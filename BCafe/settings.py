@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     "menu.apps.MenuConfig",
     "utility",
     "info",
-    "order",
+    "reservation.apps.ReservationConfig",
 ]
 
 MIDDLEWARE = [
