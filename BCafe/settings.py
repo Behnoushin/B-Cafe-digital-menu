@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "menu",
+    "menu.apps.MenuConfig",
     "utility",
     "info",
     "order",
