@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "utility",
     "info",
     "reservation.apps.ReservationConfig",
+    "django_filters",
 ]
 
 MIDDLEWARE = [

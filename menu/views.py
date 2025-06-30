@@ -1,9 +1,12 @@
 # -------------------  DRF imports   ------------------------
 from rest_framework import generics
+from rest_framework.filters import SearchFilter
+from django_filters.rest_framework import DjangoFilterBackend
 # -------------------   Apps imports ------------------------
 from .models import Category, MenuItem
 from .serializers import CategorySerializer, MenuItemSerializer
 from .permissions import IsAdminOnly, IsAdminOrReadOnly
+from .filters import MenuItemFilter
 from utility.views import BaseAPIView
 
 
@@ -63,6 +66,9 @@ class MenuItemList(BaseAPIView, generics.ListCreateAPIView):
     queryset = MenuItem.objects.all()
     serializer_class = MenuItemSerializer
     permission_classes = [IsAdminOrReadOnly]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_class = MenuItemFilter
+    search_fields = ['name', 'description']
     
     def get(self, request, *args, **kwargs):
         """
