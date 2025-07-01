@@ -1,4 +1,4 @@
-from django.db.models.signals import post_delete, pre_save
+from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from .models import MenuItem
 from .choices import ItemStatus

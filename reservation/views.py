@@ -1,4 +1,6 @@
+# -------------------  DRF imports   ------------------------
 from rest_framework import generics
+# -------------------   Apps imports ------------------------
 from .models import Reservation
 from .serializers import ReservationSerializer
 from .permissions import IsAdminOrCreateOnly

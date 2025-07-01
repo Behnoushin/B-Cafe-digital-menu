@@ -9,7 +9,6 @@ from .permissions import IsAdminOnly, IsAdminOrReadOnly
 from .filters import MenuItemFilter
 from utility.views import BaseAPIView
 
-
 ##################################################################################
 #                             Category Views                                     #
 ##################################################################################
@@ -20,11 +19,15 @@ class CategoryList(BaseAPIView, generics.ListCreateAPIView):
     permission_classes = [IsAdminOrReadOnly]
     
     def get(self, request, *args, **kwargs):
-        "Returns a list of all categories."
+        """
+        Returns a list of all categories.
+        """
         return self.list(request, *args, **kwargs)
     
     def post(self, request, *args, **kwargs):
-        "Only admins can create new categories."
+        """
+        Only admins can create new categories.
+        """
         return self.create(request, *args, **kwargs)
 
 

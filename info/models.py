@@ -1,6 +1,9 @@
+# -------------------   Django imports ------------------------
 from django.db import models
+# -------------------   Apps imports ------------------------
 from utility.models import BaseModel
 from .validators import validate_company_phone_number
+
 ##################################################################################
 #                           AboutUs Model                                        #
 ##################################################################################

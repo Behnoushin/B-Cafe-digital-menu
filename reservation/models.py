@@ -1,6 +1,11 @@
+# -------------------   Django imports ------------------------
 from django.db import models
+# -------------------   Apps imports ------------------------
 from utility.models import BaseModel
-from django.core.exceptions import ValidationError
+
+##################################################################################
+#                             Reservation Model                                  #
+##################################################################################
 
 class Reservation(BaseModel):
     full_name = models.CharField(max_length=100, verbose_name="First and Last Name")

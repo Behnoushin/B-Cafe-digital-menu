@@ -1,11 +1,14 @@
+# -------------------  DRF imports   ------------------------
 from rest_framework import serializers
+# -------------------   Apps imports ------------------------
 from .models import AboutUs, ContactUs
+from utility.serializers import BaseSerializer
 
 ##################################################################################
 #                      AboutUsSerializer serializers                             #
 ##################################################################################
 
-class AboutUsSerializer(serializers.ModelSerializer):
+class AboutUsSerializer(BaseSerializer):
     class Meta:
         model = AboutUs
         fields = '__all__'
@@ -14,7 +17,7 @@ class AboutUsSerializer(serializers.ModelSerializer):
 #                      ContactUsSerializer serializers                           #
 ##################################################################################
 
-class ContactUsSerializer(serializers.ModelSerializer):
+class ContactUsSerializer(BaseSerializer):
     class Meta:
         model = ContactUs
         fields = '__all__'

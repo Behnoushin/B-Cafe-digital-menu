@@ -1,4 +1,6 @@
+# -------------------   Django imports ------------------------
 from django.contrib import admin
+# -------------------   Apps imports ------------------------
 from .models import AboutUs, ContactUs
 
 #############################################

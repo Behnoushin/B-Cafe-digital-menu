@@ -1,4 +1,6 @@
+# -------------------  DRF imports   ------------------------
 from rest_framework import generics
+# -------------------   Apps imports ------------------------
 from .models import AboutUs, ContactUs
 from .serializers import AboutUsSerializer, ContactUsSerializer
 from .permissions import IsAdminOrReadOnly

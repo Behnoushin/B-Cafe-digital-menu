@@ -1,5 +1,7 @@
+# -------------------   Django imports ------------------------
 from django.db import models
 from django.core.exceptions import ValidationError
+# -------------------   Apps imports ------------------------
 from utility.models import BaseModel
 from .choices import ItemStatus
 

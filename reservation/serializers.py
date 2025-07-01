@@ -1,6 +1,12 @@
+# -------------------  DRF imports   ------------------------
 from rest_framework import serializers
+# -------------------   Apps imports ------------------------
 from .models import Reservation
 from utility.serializers import BaseSerializer
+
+##################################################################################
+#                          Reservation serializers                               #
+##################################################################################
 
 class ReservationSerializer(BaseSerializer):
     class Meta:
