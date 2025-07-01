@@ -24,6 +24,27 @@ class MenuItemSerializer(BaseSerializer):
         source='category',
         write_only=True
     )
+    
+    final_price = serializers.SerializerMethodField(read_only=True)
+    preparation_time = serializers.DurationField(required=False, allow_null=True)
+    
     class Meta:
         model = MenuItem
-        fields = ['id', 'name', 'description', 'price', 'category', 'category_id']
+        fields = [
+            'id',
+            'name',
+            'description',
+            'price',
+            'discount_percent',
+            'final_price',
+            'stock',
+            'status',
+            'is_special',
+            'preparation_time',
+            'category',
+            'category_id',
+        ]
+        read_only_fields = ['status', 'final_price']
+
+    def get_final_price(self, obj):
+        return obj.final_price

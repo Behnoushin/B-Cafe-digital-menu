@@ -22,15 +22,33 @@ class CategoryAdmin(admin.ModelAdmin):
 #############################################
 
 class MenuItemAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "category", "price", "created_at", "updated_at"]
+    list_display = [
+        "id",
+        "name",
+        "category",
+        "price",
+        "final_price_display",
+        "discount_percent",
+        "stock",
+        "status",
+        "is_special",
+        "preparation_time",
+        "created_at",
+        "updated_at"
+    ]
+    
     search_fields = ["name", "description"]
-    ordering = ["id"]
-    list_filter = ["category", "created_at"]
-    list_editable = ["name", "price"]
-    readonly_fields = ["id", "created_at", "updated_at"]
-    date_hierarchy = 'created_at'
+    ordering = ["-created_at"]
+    list_filter = ["category", "is_special", "status", "created_at"]
+    list_editable = ["price", "discount_percent", "stock", "is_special"]
+    readonly_fields = ["id", "status", "final_price_display", "created_at", "updated_at"]
+    date_hierarchy = "created_at"
     list_per_page = 20
 
+    def final_price_display(self, obj):
+        return f"{obj.final_price:,.0f} Toman"
+    final_price_display.short_description = "Final Price"
+    
 
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(MenuItem, MenuItemAdmin)
