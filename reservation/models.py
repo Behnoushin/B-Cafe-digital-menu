@@ -20,7 +20,7 @@ class Table(models.Model):
 ##################################################################################
 
 class Reservation(BaseModel):
-    full_name = models.CharField(max_length=100, verbose_name="First and Last Name")
+    full_name = models.CharField(max_length=100, verbose_name="Full Name")
     phone_number = models.CharField(max_length=20, verbose_name="Phone Number")
     date = models.DateField(verbose_name="Day")
     time = models.TimeField(verbose_name="Time")
