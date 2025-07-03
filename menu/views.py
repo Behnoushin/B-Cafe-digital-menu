@@ -1,3 +1,5 @@
+# -----------------  Django imports   ------------------------
+from django.utils import timezone
 # -------------------  DRF imports   ------------------------
 from rest_framework import generics
 from rest_framework.filters import SearchFilter
@@ -112,5 +114,70 @@ class MenuItemDetail(BaseAPIView, generics.RetrieveUpdateDestroyAPIView):
     def delete(self, request, *args, **kwargs):
         """
         Delete menu item (admin only).
+        """
+        return self.destroy(request, *args, **kwargs)
+    
+##################################################################################
+#                             SpecialOffer Views                                 #
+##################################################################################
+
+class SpecialOfferList(BaseAPIView, generics.ListCreateAPIView):
+    serializer_class = MenuItemSerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+    def get_queryset(self):
+        now = timezone.now()
+        return MenuItem.objects.filter(
+            discount_percent__gt=0,
+            discount_start__lte=now,
+            discount_end__gte=now
+        )
+
+    def get(self, request, *args, **kwargs):
+        """
+        Return a list of all currently active special offer items.
+        """
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        """
+        Create a new menu item with a special offer (admin only).
+        """
+        return self.create(request, *args, **kwargs)
+
+
+class SpecialOfferDetail(BaseAPIView, generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = MenuItemSerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+    def get_queryset(self):
+        now = timezone.now()
+        return MenuItem.objects.filter(
+            discount_percent__gt=0,
+            discount_start__lte=now,
+            discount_end__gte=now
+        )
+
+    def get(self, request, *args, **kwargs):
+        """
+        Retrieve details of a specific special offer item.
+        """
+        return self.retrieve(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        """
+        Fully update a special offer item (admin only).
+        """
+        return self.update(request, *args, **kwargs)
+
+    def patch(self, request, *args, **kwargs):
+        """
+        Partially update a special offer item (admin only).
+        """
+        return self.partial_update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        """
+        Delete a special offer item (admin only).
         """
         return self.destroy(request, *args, **kwargs)

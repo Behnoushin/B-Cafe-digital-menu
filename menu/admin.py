@@ -29,6 +29,8 @@ class MenuItemAdmin(admin.ModelAdmin):
         "price",
         "final_price_display",
         "discount_percent",
+        "discount_start",
+        "discount_end",
         "stock",
         "status",
         "is_special",
@@ -39,8 +41,8 @@ class MenuItemAdmin(admin.ModelAdmin):
     
     search_fields = ["name", "description"]
     ordering = ["-created_at"]
-    list_filter = ["category", "is_special", "status", "created_at"]
-    list_editable = ["price", "discount_percent", "stock", "is_special"]
+    list_filter = ["category", "is_special", "status", "created_at", "discount_start", "discount_end"]
+    list_editable = ["price", "discount_percent", "stock", "is_special", "discount_start", "discount_end"]
     readonly_fields = ["id", "status", "final_price_display", "created_at", "updated_at"]
     date_hierarchy = "created_at"
     list_per_page = 20

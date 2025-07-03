@@ -1,5 +1,8 @@
 from django.urls import path
-from .views import CategoryList, CategoryDetail, MenuItemList, MenuItemDetail
+from .views import (
+    CategoryList, CategoryDetail, MenuItemList,
+    MenuItemDetail, SpecialOfferList, SpecialOfferDetail
+    )
 
 urlpatterns = [
     
@@ -10,4 +13,8 @@ urlpatterns = [
     # MenuItem URLs
     path('menu-items/', MenuItemList.as_view(), name='menuitem-list'),
     path('menu-items/<int:pk>/', MenuItemDetail.as_view(), name='menuitem-detail'),
+    
+    # SpecialOffer URLs
+    path('menu/special-offers/', SpecialOfferList.as_view(), name='special-offer-list'),
+    path('menu/special-offers/<uuid:pk>/', SpecialOfferDetail.as_view(), name='special-offer-detail'),
 ]

@@ -26,6 +26,7 @@ class MenuItemSerializer(BaseSerializer):
     )
     
     final_price = serializers.SerializerMethodField(read_only=True)
+    is_discount_active = serializers.SerializerMethodField(read_only=True)
     preparation_time = serializers.DurationField(required=False, allow_null=True)
     
     class Meta:
@@ -36,6 +37,9 @@ class MenuItemSerializer(BaseSerializer):
             'description',
             'price',
             'discount_percent',
+            'discount_start',
+            'discount_end',
+            'is_discount_active',
             'final_price',
             'stock',
             'status',
@@ -44,7 +48,11 @@ class MenuItemSerializer(BaseSerializer):
             'category',
             'category_id',
         ]
-        read_only_fields = ['status', 'final_price']
+        
+        read_only_fields = ['status', 'final_price', 'is_discount_active']
 
     def get_final_price(self, obj):
         return obj.final_price
+    
+    def get_is_discount_active(self, obj):
+        return obj.is_discount_active

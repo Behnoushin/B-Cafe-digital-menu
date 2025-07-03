@@ -25,7 +25,7 @@ class ReservationSerializer(BaseSerializer):
     class Meta:
         model = Reservation
         fields = '__all__'
-        read_only_fields = ['created_date', 'is_approved']
+        read_only_fields = ['is_approved']
 
     def validate_phone_number(self, value):
         if not value.isdigit() or len(value) != 11:

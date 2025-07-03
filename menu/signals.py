@@ -1,5 +1,7 @@
+# -----------------  Django imports   ------------------------
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
+# -------------------   Apps imports ------------------------
 from .models import MenuItem
 from .choices import ItemStatus
 

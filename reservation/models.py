@@ -42,7 +42,6 @@ class Reservation(BaseModel):
     )
     table = models.ForeignKey("Table", on_delete=models.CASCADE, verbose_name="Selected Table")
     is_approved = models.BooleanField(default=False, verbose_name="Approved by Admin")
-    created_date = models.DateTimeField(auto_now_add=True, verbose_name="Created Date")
         
     class Meta:
         ordering = ["-created_date"]

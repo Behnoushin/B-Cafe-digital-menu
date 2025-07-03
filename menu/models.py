@@ -1,6 +1,7 @@
 # -------------------   Django imports ------------------------
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 # -------------------   Apps imports ------------------------
 from utility.models import BaseModel
 from .choices import ItemStatus
@@ -34,12 +35,23 @@ class MenuItem(BaseModel):
     is_special = models.BooleanField(default=False)
     preparation_time = models.DurationField(null=True, blank=True)
     discount_percent = models.PositiveIntegerField(default=0)
+    discount_start = models.DateTimeField(null=True, blank=True)
+    discount_end = models.DateTimeField(null=True, blank=True)
     status = models.CharField(
         max_length=20,
         choices=ItemStatus.choices,
         default=ItemStatus.AVAILABLE
         )
-    
+
+    @property
+    def is_discount_active(self):
+        now = timezone.now()
+        return (
+            self.discount_percent > 0
+            and self.discount_start and self.discount_end
+            and self.discount_start <= now <= self.discount_end
+        )
+
     @property
     def final_price(self):
         if self.discount_percent:
@@ -65,8 +77,8 @@ class MenuItem(BaseModel):
             raise ValidationError("The price cannot be negative!")
         
         if self.stock < 0:
-            raise ValidationError("Inventory can be negative!")
-        
+            raise ValidationError("Inventory cannot be negative!")
+
         if not 0 <= self.discount_percent <= 100:
             raise ValidationError("Discount percent must be between 0 and 100.")
     
@@ -85,7 +97,7 @@ class MenuItem(BaseModel):
     class Meta:
         ordering = ['-created_at']
         verbose_name = "Menu item"
-        verbose_name_plural = "Menu item"
+        verbose_name_plural = "Menu items"
         constraints = [
             models.UniqueConstraint(fields=['name', 'category'], name='unique_item_per_category')
         ]
