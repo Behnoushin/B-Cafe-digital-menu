@@ -104,10 +104,20 @@ This project provides a structured and scalable backend system that handles:
 ### ✅ Backend Setup
 
 ```bash
-git clone <repo-url>
-cd B-Cafe
+git clone https://github.com/Behnoushin/B-Cafe-digital-menu
+cd Charity-Project
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
-python manage.py migrate
+
+# Run migrations
+python manage.py migratea
+
+# Start development server
 python manage.py runserver
 ```
 
