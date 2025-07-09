@@ -1,5 +1,8 @@
 # ☕ B-Cafe API Project
-![B-Cafe](images/B-Cafe.png)
+<p align="center">
+  <img src="images/B-Cafe.png" alt="B-Cafe Logo" width="300"/>
+</p>
+
 
 Welcome to **B-Cafe**, a Django REST Framework-based API project designed to manage the digital menu, user system, and reservation flow of a modern café-restaurant.
 
