@@ -44,7 +44,7 @@ class Reservation(BaseModel):
     is_approved = models.BooleanField(default=False, verbose_name="Approved by Admin")
         
     class Meta:
-        ordering = ["-created_date"]
+        ordering = ["-created_at"]
         verbose_name = "Reservation"
         verbose_name_plural = "Reservations"
 
