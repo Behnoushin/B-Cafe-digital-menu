@@ -10,10 +10,10 @@ from utility.models import BaseModel
 
 class Table(models.Model):
     number = models.PositiveIntegerField(unique=True, verbose_name="Table Number")
-    capacity = models.PositiveIntegerField(choices=TableTypeChoices.choices, verbose_name="Capacity")
+    capacity = models.CharField(max_length=2, choices=TableTypeChoices.choices, verbose_name="Capacity")
 
     def __str__(self):
-        return f"Table {self.number} - {self.capacity} solo.)"
+        return f"Table {self.number} - {self.get_capacity_display()}"
     
 ##################################################################################
 #                             Reservation Model                                  #
@@ -42,7 +42,7 @@ class Reservation(BaseModel):
     )
     table = models.ForeignKey("Table", on_delete=models.CASCADE, verbose_name="Selected Table")
     is_approved = models.BooleanField(default=False, verbose_name="Approved by Admin")
-        
+
     class Meta:
         ordering = ["-created_at"]
         verbose_name = "Reservation"

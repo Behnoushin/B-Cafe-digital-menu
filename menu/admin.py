@@ -47,10 +47,11 @@ class MenuItemAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
     list_per_page = 20
 
+    @admin.display(description="Final Price")
     def final_price_display(self, obj):
-        return f"{obj.final_price:,.0f} Toman"
-    final_price_display.short_description = "Final Price"
-    
+        if obj.final_price is not None:
+            return "{:.2f} $".format(obj.final_price)
+        return "-"
 
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(MenuItem, MenuItemAdmin)

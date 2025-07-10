@@ -2,7 +2,10 @@
 <p align="center">
   <img src="images/B-Cafe.png" alt="B-Cafe Logo" width="300"/>
 </p>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5425a88 (Update all apps)
 
 Welcome to **B-Cafe**, a Django REST Framework-based API project designed to manage the digital menu, user system, and reservation flow of a modern café-restaurant.
 
