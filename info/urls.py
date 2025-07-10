@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import (
     AboutUsList, AboutUsDetail,
-    ContactUsList, ContactUsDetail
+    ContactUsList, ContactUsDetail,
+    WorkingHoursList, WorkingHoursDetail
 )
 
 urlpatterns = [
@@ -12,4 +13,8 @@ urlpatterns = [
     # Contact Us
     path('contact/', ContactUsList.as_view(), name='contactus-list'),
     path('contact/<int:pk>/', ContactUsDetail.as_view(), name='contactus-detail'),
+    
+    # Working Hours
+    path('working-hours/', WorkingHoursList.as_view(), name='working-hours-list'),
+    path('working-hours/<int:pk>/', WorkingHoursDetail.as_view(), name='working-hours-detail'),
 ]

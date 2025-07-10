@@ -1,7 +1,7 @@
 # -------------------   Django imports ------------------------
 from django.contrib import admin
 # -------------------   Apps imports ------------------------
-from .models import AboutUs, ContactUs
+from .models import AboutUs, ContactUs, WorkingHours
 
 #############################################
 #              AboutUs Admin                #
@@ -26,6 +26,16 @@ class ContactUsAdmin(admin.ModelAdmin):
     readonly_fields = ["id", "created_at", "updated_at"]
     date_hierarchy = 'created_at'
     list_per_page = 20
+ 
+#############################################
+#              WorkingHours Admin           #
+#############################################
+   
+class WorkingHoursAdmin(admin.ModelAdmin):
+    list_display = ['day', 'open_time', 'close_time']
+    ordering = ['day']
     
 admin.site.register(AboutUs, AboutUsAdmin)
 admin.site.register(ContactUs, ContactUsAdmin)
+admin.site.register(WorkingHours, WorkingHoursAdmin)
+
