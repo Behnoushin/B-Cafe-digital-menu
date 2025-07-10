@@ -1,7 +1,8 @@
-# -------------------  DRF imports   ------------------------
 from rest_framework import generics, status
 from rest_framework.response import Response
-# -------------------   Apps imports ------------------------
+from rest_framework.permissions import AllowAny
+from rest_framework.exceptions import PermissionDenied
+
 from .models import Order
 from .serializers import OrderSerializer
 from .permissions import IsAdminUser, IsCashierUser, IsWaiterUser, IsCustomerUser
@@ -17,6 +18,9 @@ class OrderListCreateView(BaseAPIView, generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
+        if not user.is_authenticated:
+            raise PermissionDenied("Please log in to access this resource.")
+
         if user.role == 'admin':
             return Order.objects.all()
         elif user.role == 'cashier':
@@ -36,6 +40,10 @@ class OrderListCreateView(BaseAPIView, generics.ListCreateAPIView):
 
     def get_permissions(self):
         user = self.request.user
+
+        if not user.is_authenticated:
+            return [AllowAny()]  
+
         if user.role == 'admin':
             permission_classes = [IsAdminUser]
         elif user.role == 'cashier':
@@ -46,6 +54,7 @@ class OrderListCreateView(BaseAPIView, generics.ListCreateAPIView):
             permission_classes = [IsCustomerUser]
         else:
             permission_classes = []
+
         return [permission() for permission in permission_classes]
 
 
@@ -55,6 +64,10 @@ class OrderRetrieveUpdateDestroyView(BaseAPIView, generics.RetrieveUpdateDestroy
 
     def get_permissions(self):
         user = self.request.user
+
+        if not user.is_authenticated:
+            return [AllowAny()]
+
         if user.role == 'admin':
             permission_classes = [IsAdminUser]
         elif user.role == 'cashier':
@@ -65,11 +78,14 @@ class OrderRetrieveUpdateDestroyView(BaseAPIView, generics.RetrieveUpdateDestroy
             permission_classes = [IsCustomerUser]
         else:
             permission_classes = []
+
         return [permission() for permission in permission_classes]
 
     def perform_update(self, serializer):
         user = self.request.user
         new_status = serializer.validated_data.get('status', None)
+
         if user.role == 'cashier' and new_status != OrderStatusChoices.PAID:
-            return Response({'detail': 'The cashier can only change the status to paid.'}, status=status.HTTP_403_FORBIDDEN)
+            raise PermissionDenied("Cashiers are only allowed to change the order status to 'PAID'.")
+
         serializer.save()

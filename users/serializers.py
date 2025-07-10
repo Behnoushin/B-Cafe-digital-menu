@@ -63,7 +63,7 @@ class RegisterSerializer(BaseSerializer):
 #                    Change Password Serializer                                  #
 ##################################################################################
 
-class ChangePasswordSerializer(serializers.Serializer):
+class ChangePasswordSerializer(BaseSerializer):
     """
     Serializer for password change endpoint.
     Requires old_password and new_password.

@@ -67,7 +67,6 @@ class UserProfileView(BaseAPIView, generics.RetrieveUpdateAPIView):
         return self.request.user
     
 
-
 class UserProfileUpdateView(BaseAPIView, generics.UpdateAPIView):
     """
     API endpoint dedicated to updating user profile partially or fully.
