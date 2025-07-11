@@ -25,7 +25,7 @@ class Reservation(BaseModel):
     date = models.DateField(verbose_name="Day")
     time = models.TimeField(verbose_name="Time")
     number_of_guests = models.PositiveIntegerField(verbose_name="Number of Guests")
-    table_type = models.CharField(max_length=2, choices=TableTypeChoices.choices)
+    table_type = models.CharField(max_length=2, choices=TableTypeChoices.choices, verbose_name="Table Type")
     extra_notes = models.TextField(blank=True, null=True, verbose_name="Extra Notes")
     reservation_type = models.CharField(
         max_length=20,
@@ -50,4 +50,3 @@ class Reservation(BaseModel):
 
     def __str__(self):
         return f"{self.full_name} - {self.date} {self.time}"
-    
