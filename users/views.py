@@ -17,6 +17,7 @@ from .serializers import (
     PurchaseHistoryDetailSerializer,
     SendOTPSerializer,
 )
+from .models import CustomUser
 from utility.views import BaseAPIView
 
 User = get_user_model()
@@ -25,29 +26,64 @@ User = get_user_model()
 #                        User Registration Views                                 #
 ##################################################################################
 
-class UserRegistrationView(BaseAPIView, generics.CreateAPIView):
+class UserRegistrationView(generics.CreateAPIView):
     """
-    API endpoint that allows new users to register.
-    Accessible to anyone (AllowAny).
-    Uses RegisterSerializer to validate and create users.
+    API endpoint for user registration.
+    Allows anyone to create a new user account.
+    Returns a success message and user data on successful registration.
     """
-    queryset = User.objects.all()
+    queryset = CustomUser.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        # Validate the data
+        if serializer.is_valid():
+            # Save the new user
+            self.perform_create(serializer)
+            return Response({
+                "message": "User registered successfully.",
+                "user": UserSerializer(serializer.instance).data
+            }, status=status.HTTP_201_CREATED)
+
+        # Return validation errors
+        return Response({
+            "message": "Registration failed, Please check the input.",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
     
 ##################################################################################
 #                          UserLogin Views                                       #
 ##################################################################################
 
-class UserLoginView(BaseAPIView, TokenObtainPairView):
+class UserLoginView(TokenObtainPairView):
     """
     API endpoint for user login.
-    Returns JWT tokens on successful authentication.
-    Uses CustomTokenObtainPairSerializer to include user role in token.
-    Accessible to anyone (AllowAny).
+    Allows anyone to log in and receive JWT tokens.
+    Returns success message and tokens on success, or error message on failure.
     """
     serializer_class = CustomTokenObtainPairSerializer
     permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        try:
+            # Validate login credentials and generate tokens
+            serializer.is_valid(raise_exception=True)
+            return Response({
+                "message": "Login successful.",
+                "tokens": serializer.validated_data
+            }, status=status.HTTP_200_OK)
+
+        except TokenError as e:
+            # Return login error (e.g., wrong password)
+            return Response({
+                "message": "Login failed, Invalid credentials.",
+                "error": str(e)
+            }, status=status.HTTP_401_UNAUTHORIZED)
     
 ##################################################################################
 #                             UserProfile Views                                  #
