@@ -104,7 +104,6 @@ This project provides a structured and scalable backend system that handles:
 
 ```bash
 git clone https://github.com/Behnoushin/B-Cafe-digital-menu
-cd Charity-Project
 
 # Create virtual environment
 python3 -m venv venv
