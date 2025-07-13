@@ -3,7 +3,7 @@
   <img src="images/B-Cafe.png" alt="B-Cafe Logo" width="300"/>
 </p>
 
-Welcome to **B-Cafe**, a Django REST Framework-based API project designed to manage the digital menu, user system, and reservation flow of a modern café-restaurant.
+Welcome to **B-Cafe**, a Django REST Framework-based API project designed to manage the digital menu, user system, reservation flow, and feedback collection of a modern café-restaurant.
 
 ---
 
@@ -22,6 +22,9 @@ This project provides a structured and scalable backend system that handles:
 
 - 🧾 **Order Management System**  
   Allows customers to place orders, waiters to continue orders, and cashiers to mark orders as paid. Admins have full access.
+
+- 💬 **Customer Feedback System**  
+  After completing an order, customers can submit structured feedback which is viewable only by admins.
 
 - 📞 **Contact & Info Pages**  
   Includes an About Us and Contact Us section for showing café information and handling user messages.
@@ -57,7 +60,7 @@ This project provides a structured and scalable backend system that handles:
 - Unique email validation on signup
 - Signals:
   - Welcome email on registration
-- OTP system placeholder for future SMS/email verification
+- OTP system placeholder for future email verification
 - Purchase History model placeholder
 
 ### 🧾 Orders
@@ -68,11 +71,17 @@ This project provides a structured and scalable backend system that handles:
 - Orders can be filtered and viewed based on user role
 - Send confirmation email on payment
 
-### 💬 API Behavior
-- Clean RESTful endpoints
-- Custom base view class for shared behavior (`BaseAPIView`)
-- Token returns username and role
-- Protected endpoints with role-specific access
+### 💬 Customer Feedback 
+- Structured feedback form after placing an order:
+  - Food rating (1–10, with labels like “Perfect” or “Bad”)
+  - Questions about service, staff, cleanliness, preparation time, and revisit intent
+  - Optional user comment
+- Admin can:
+  - View all feedbacks (API & admin panel)
+  - Filter feedbacks by rating/type/date
+  - Add admin response for future display
+- No one can delete feedbacks
+- Logs user IP & user agent for statistics/security
 
 ---
 
@@ -82,7 +91,7 @@ This project provides a structured and scalable backend system that handles:
 - 🕸️ Django 4.x  
 - ⚙️ Django REST Framework  
 - 🔎 Django Filter  
-- 🐳 Docker & Docker Compose  
+- 🐳 Docker & Docker Compose *(optional)*  
 - 📨 SMTP Email for notifications
 
 ---
@@ -94,6 +103,7 @@ This project provides a structured and scalable backend system that handles:
 - `users` – Authentication, roles, profile, password management  
 - `orders` – Order placement and role-based access logic  
 - `info` – About Us & Contact Us pages  
+- `feedback` – User feedback system on ordered menu items 
 - `utility` – Common views, custom permissions, base models
 
 ---
@@ -104,6 +114,7 @@ This project provides a structured and scalable backend system that handles:
 
 ```bash
 git clone https://github.com/Behnoushin/B-Cafe-digital-menu
+cd B-Cafe-digital-menu
 
 # Create virtual environment
 python3 -m venv venv
@@ -113,7 +124,8 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Run migrations
-python manage.py migratea
+python manage.py makemigrations
+python manage.py migrate
 
 # Start development server
 python manage.py runserver
