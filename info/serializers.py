@@ -26,7 +26,7 @@ class ContactUsSerializer(BaseSerializer):
 #                      WorkingHoursSerializer serializers                        #
 ##################################################################################   
 
-class WorkingHoursSerializer(serializers.ModelSerializer):
+class WorkingHoursSerializer(BaseSerializer):
     class Meta:
         model = WorkingHours
         fields = '__all__'

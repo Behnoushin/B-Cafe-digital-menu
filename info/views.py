@@ -45,6 +45,7 @@ class WorkingHoursList(generics.ListCreateAPIView):
     serializer_class = WorkingHoursSerializer
     permission_classes = [IsAdminOrReadOnly]
 
+
 class WorkingHoursDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = WorkingHours.objects.all()
     serializer_class = WorkingHoursSerializer

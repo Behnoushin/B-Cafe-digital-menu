@@ -4,6 +4,7 @@ from django.db import models
 from utility.models import BaseModel
 from .validators import validate_company_phone_number
 from .choices import WeekDays
+
 ##################################################################################
 #                           AboutUs Model                                        #
 ##################################################################################
@@ -21,7 +22,7 @@ class AboutUs(BaseModel):
   
 class ContactUs(BaseModel):
     phone_number = models.CharField(
-        max_length=20,
+        max_length=8,
         verbose_name="Contact number",
         validators=[validate_company_phone_number]
     )
