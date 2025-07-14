@@ -33,8 +33,6 @@ class Feedback(BaseModel):
         choices=FeedbackStatus.choices, 
         default=FeedbackStatus.PENDING
         )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     user_ip = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.CharField(max_length=255, blank=True)
 
