@@ -5,3 +5,4 @@ class Roles(TextChoices):
     CASHIER = "cashier", "Cashier"
     WAITER = "waiter", "Waiter"
     CUSTOMER = "customer", "Customer"
+    CHEF = "chef", "Chef"

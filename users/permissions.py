@@ -22,3 +22,7 @@ class IsWaiter(RolePermission):
 
 class IsCustomer(RolePermission):
     allowed_roles = ['customer']
+
+
+class IsChef(RolePermission):
+    allowed_roles = ['chef']
