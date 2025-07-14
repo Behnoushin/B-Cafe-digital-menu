@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "reservation.apps.ReservationConfig",
     "users.apps.UsersConfig",
     "orders.apps.OrdersConfig",
+    "feedback",
 ]
 
 AUTH_USER_MODEL = 'users.CustomUser'
