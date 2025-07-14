@@ -101,3 +101,6 @@ class MenuItem(BaseModel):
         constraints = [
             models.UniqueConstraint(fields=['name', 'category'], name='unique_item_per_category')
         ]
+        
+
+        
