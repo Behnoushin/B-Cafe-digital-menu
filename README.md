@@ -83,6 +83,20 @@ This project provides a structured and scalable backend system that handles:
 - No one can delete feedbacks
 - Logs user IP & user agent for statistics/security
 
+### 🧺 Kitchen Ingredient Requests
+- Chefs can submit supply requests for kitchen ingredients, including name and quantity
+- Each request can include multiple items and an optional note
+- Admins can:
+  - View all requests
+  - Approve or reject each item individually
+  - Mark items as purchased
+- Chefs can only edit or delete their requests **before admin review**
+- Permission system ensures:
+  - Only chefs can submit or edit their own requests
+  - Only admins can update item statuses or review requests
+- Admin panel supports inline item review for fast processing
+- System logs each new request via signal (ready for email or real-time notification integration)
+
 ---
 
 ## 📦 Technologies Used
@@ -104,6 +118,7 @@ This project provides a structured and scalable backend system that handles:
 - `orders` – Order placement and role-based access logic  
 - `info` – About Us & Contact Us pages  
 - `feedback` – User feedback system on ordered menu items 
+- `ingredient_requests` – Kitchen ingredient request and item-level approval system  
 - `utility` – Common views, custom permissions, base models
 
 ---
