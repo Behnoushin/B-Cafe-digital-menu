@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "users.apps.UsersConfig",
     "orders.apps.OrdersConfig",
     "feedback",
+    "ingredient_requests.apps.IngredientRequestsConfig",
 ]
 
 AUTH_USER_MODEL = 'users.CustomUser'

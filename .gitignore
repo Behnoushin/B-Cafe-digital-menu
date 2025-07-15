@@ -4,6 +4,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
 
 # ========================
 # Virtual Environment
@@ -73,6 +74,11 @@ pip-delete-this-directory.txt
 # Sphinx Docs
 # ========================
 docs/_build/
+
+# ========================
+# macOS System files
+# ========================
+.DS_Store
 
 # ========================
 # Others (Scrapy, Cython, etc.)
