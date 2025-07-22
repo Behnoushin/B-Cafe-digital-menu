@@ -105,9 +105,9 @@ This project provides a structured and scalable backend system that handles:
 - 🕸️ Django 4.x  
 - ⚙️ Django REST Framework  
 - 🔎 Django Filter  
-- 🐳 Docker & Docker Compose *(optional)*  
+- 🐳 Docker & Docker Compose
 - 📨 SMTP Email for notifications
-
+- 🪄 Celery and Redis for asynchronous task handling
 ---
 
 ## 📁 Apps Structure
