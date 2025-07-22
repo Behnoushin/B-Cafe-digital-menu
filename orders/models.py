@@ -25,7 +25,6 @@ class Order(BaseModel):
         default=OrderStatusChoices.PENDING
     )
     note = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         constraints = [
