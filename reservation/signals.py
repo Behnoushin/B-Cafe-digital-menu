@@ -3,6 +3,7 @@ from django.dispatch import receiver
 from .models import Reservation
 from users.models import CustomUser
 from django.core.mail import send_mail
+from .tasks import send_reservation_email
 
 # ---------------------- Cache previous approval status before saving ----------------------
 @receiver(pre_save, sender=Reservation)
@@ -21,25 +22,17 @@ def cache_approval_state(sender, instance, **kwargs):
         instance._was_approved = False
 
 # ---------------------- Handle reservation events after saving ----------------------
-@receiver(post_save, sender=Reservation)
 def reservation_status_handler(sender, instance, created, **kwargs):
-    """
-    Handles notifications when a reservation is created or approved:
-    - Sends a message to the customer when the reservation is created.
-    - Sends a message to the admin when a new reservation is submitted.
-    - Notifies cashier and waiter when a reservation is approved by admin.
-    """
-    # Notify user upon reservation creation
+    # When a new reservation is created ---
     if created:
         user_msg = (
             f"Dear {instance.full_name}, your reservation for {instance.date} at {instance.time} is received. "
             f"Please wait for admin approval."
         )
-        print("USER:", user_msg)
-        # Uncomment to send actual email:
-        # send_mail("Reservation Received", user_msg, "no-reply@b-cafe.com", [instance.email])
+        send_reservation_email.delay(
+            "Reservation Received", user_msg, instance.email
+        )
 
-        # Notify admin about new reservation
         admin_msg = (
             f"New reservation request:\n"
             f"Name: {instance.full_name}\n"
@@ -50,11 +43,11 @@ def reservation_status_handler(sender, instance, created, **kwargs):
             f"Type: {instance.reservation_type}\n"
             f"Notes: {instance.extra_notes or 'No notes'}"
         )
-        print("ADMIN:", admin_msg)
-        # Uncomment to send email to admin
-        # send_mail("New Reservation", admin_msg, "no-reply@b-cafe.com", ["admin@b-cafe.com"])
+        send_reservation_email.delay(
+            "New Reservation", admin_msg, "admin@b-cafe.com"
+        )
 
-    # Notify cashier and waiter when admin approves the reservation
+    # When a reservation is approved (updated, not created) ---
     if not created and not instance._was_approved and instance.is_approved:
         staff_msg = (
             f"Reservation approved:\n"
@@ -66,7 +59,10 @@ def reservation_status_handler(sender, instance, created, **kwargs):
             f"Type: {instance.reservation_type}\n"
             f"Notes: {instance.extra_notes or 'No notes'}"
         )
-        for staff in CustomUser.objects.filter(role__in=['cashier', 'waiter'], is_active=True):
-            print(f"Notify {staff.username} ({staff.role}): {staff_msg}")
-            # Uncomment to send email to staff
-            # send_mail("Reservation Approved", staff_msg, "no-reply@b-cafe.com", [staff.email])
+
+        staff_members = CustomUser.objects.filter(role__in=['cashier', 'waiter'], is_active=True)
+
+        for staff in staff_members:
+            send_reservation_email.delay(
+                "Reservation Approved", staff_msg, staff.email
+            )
