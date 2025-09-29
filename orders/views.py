@@ -1,3 +1,5 @@
+# -------------------  Django imports   ------------------------
+from django.utils import timezone
 # -------------------  DRF imports   ------------------------
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -89,4 +91,7 @@ class OrderRetrieveUpdateDestroyView(BaseAPIView, generics.RetrieveUpdateDestroy
         if user.role == 'cashier' and new_status != OrderStatusChoices.PAID:
             raise PermissionDenied("Cashiers are only allowed to change the order status to 'PAID'.")
 
-        serializer.save()
+        instance = serializer.save()
+        if new_status == OrderStatusChoices.PAID and not instance.paid_at:
+            instance.paid_at = timezone.now()
+            instance.save(update_fields=["paid_at"])

@@ -25,6 +25,8 @@ class Order(BaseModel):
         default=OrderStatusChoices.PENDING
     )
     note = models.TextField(blank=True, null=True)
+    payment_status = models.DateTimeField(null=True, blank=True)
+
 
     class Meta:
         constraints = [

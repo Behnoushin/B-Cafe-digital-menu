@@ -11,6 +11,8 @@ class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 1 
     readonly_fields = ['final_price', 'total_item_price']
+    can_delete = True
+    show_change_link = True
 
 #############################################
 #               Order Admin                 #

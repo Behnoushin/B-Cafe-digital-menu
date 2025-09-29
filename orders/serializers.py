@@ -30,13 +30,27 @@ class OrderSerializer(BaseSerializer):
     total_price = serializers.SerializerMethodField()
     user = serializers.StringRelatedField(read_only=True)
     table_number = serializers.IntegerField(source='table.number', read_only=True)
+    payment_status = serializers.SerializerMethodField()
+    payment_date = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ['id', 'user', 'table', 'table_number', 'status', 'items', 'total_price', 'created_at', 'note']
+        fields = [
+            'id', 'user', 'table', 'table_number',
+            'status', 'items', 'total_price', 'created_at',
+            'note','payment_status', 'payment_date'
+        ]
 
     def get_total_price(self, obj):
         return obj.total_price()
+
+    def get_payment_status(self, obj):
+        return "Paid" if obj.status == "PAID" else "Pending"
+
+    def get_payment_date(self, obj):
+        if obj.status == "PAID":
+            return obj.updated_at
+        return None
 
     def validate(self, data):
         items_data = data.get('items', [])
