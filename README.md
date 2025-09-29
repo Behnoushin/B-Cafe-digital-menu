@@ -64,12 +64,14 @@ This project provides a structured and scalable backend system that handles:
 - Purchase History model placeholder
 
 ### 🧾 Orders
-- Order & OrderItem models with connection to user and menu
-- Calculate total price with active discounts
-- Prevent over-ordering with real-time stock validation
-- Stock auto-decreased when ordering, increased on delete
-- Orders can be filtered and viewed based on user role
-- Send confirmation email on payment
+- **Order & OrderItem models** – Connects user & menu items, calculates total price with discounts
+- **Payment model** – Tracks `amount`, `status`, `method`, and `paid_at`
+- **Invoice model** – Tracks `invoice_number`, `total_amount`, `due_date`, and `is_paid`
+- Admin panel support for Payment and Invoice
+- Signals: auto-update invoice when payment is completed
+- Role-based filtering and permissions
+- Real-time stock validation
+- Sends confirmation email when order is paid
 
 ### 💬 Customer Feedback 
 - Structured feedback form after placing an order:
@@ -97,6 +99,11 @@ This project provides a structured and scalable backend system that handles:
 - Admin panel supports inline item review for fast processing
 - System logs each new request via signal (ready for email or real-time notification integration)
 
+## ✨ Other Enhancements
+- **Read-only endpoints** – AboutUs, ContactUs, WorkingHours  
+- **Caching** – Redis for faster responses  
+- **History tracking** – `django-simple-history` logs changes  
+- **Rate limiting** – UserRateThrottle & AnonRateThrottle for stability  
 ---
 
 ## 📦 Technologies Used
@@ -115,7 +122,7 @@ This project provides a structured and scalable backend system that handles:
 - `menu` – Menu items, categories, discount handling  
 - `reservation` – Table reservation system  
 - `users` – Authentication, roles, profile, password management  
-- `orders` – Order placement and role-based access logic  
+- `orders` – Orders, payments, invoices  
 - `info` – About Us & Contact Us pages  
 - `feedback` – User feedback system on ordered menu items 
 - `ingredient_requests` – Kitchen ingredient request and item-level approval system  
