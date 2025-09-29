@@ -49,7 +49,8 @@ INSTALLED_APPS = [
     "orders.apps.OrdersConfig",
     "feedback",
     "ingredient_requests.apps.IngredientRequestsConfig",
-]
+    "simple_history",
+    ]
 
 AUTH_USER_MODEL = 'users.CustomUser'
 
@@ -65,6 +66,15 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 15,
+    # ---------------- Throttle ----------------
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.UserRateThrottle',  # Restrictions for logged in users
+        'rest_framework.throttling.AnonRateThrottle',  # Restrictions for anonymous users
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'user': '10/min',  
+        'anon': '5/min', 
+    }
 }
 
 
@@ -77,6 +87,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "simple_history.middleware.HistoryRequestMiddleware",
 ]
 
 ROOT_URLCONF = "BCafe.urls"
@@ -167,3 +178,16 @@ CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+
+# CACHES
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",  # Redis address
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
+CACHE_TTL = 60 * 5  # 5 min

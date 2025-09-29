@@ -5,3 +5,4 @@ class OrderStatusChoices(models.TextChoices):
     CONFIRMED = 'confirmed', 'Confirmed'
     PAID = 'paid', 'Paid'
     CANCELLED = 'cancelled', 'Cancelled'
+
