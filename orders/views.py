@@ -1,13 +1,13 @@
 # -------------------  Django imports   ------------------------
 from django.utils import timezone
+from django.utils.crypto import get_random_string
 # -------------------  DRF imports   ------------------------
-from rest_framework import generics, status
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework import generics
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 # -------------------   Apps imports ------------------------
-from .models import Order
-from .serializers import OrderSerializer
+from .models import Order, Payment, Invoice
+from .serializers import OrderSerializer, PaymentSerializer, InvoiceSerializer
 from .permissions import IsAdminUser, IsCashierUser, IsWaiterUser, IsCustomerUser
 from utility.views import BaseAPIView
 from .choices import OrderStatusChoices
@@ -95,3 +95,67 @@ class OrderRetrieveUpdateDestroyView(BaseAPIView, generics.RetrieveUpdateDestroy
         if new_status == OrderStatusChoices.PAID and not instance.paid_at:
             instance.paid_at = timezone.now()
             instance.save(update_fields=["paid_at"])
+
+
+##################################################################################
+#                             Payment Views                                        #
+##################################################################################
+
+class PaymentListCreateView(generics.ListCreateAPIView):
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role in ['admin', 'cashier']:
+            return Payment.objects.all()
+        return Payment.objects.filter(order__user=user)
+
+    def perform_create(self, serializer):
+        payment = serializer.save()
+        if payment.status == 'paid':
+            payment.mark_as_paid()
+            invoice = getattr(payment.order, 'invoice', None)
+            if invoice:
+                invoice.is_paid = True
+                invoice.save(update_fields=['is_paid'])
+
+
+class PaymentRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = PaymentSerializer
+    queryset = Payment.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        if instance.status == 'paid' and not instance.paid_at:
+            instance.mark_as_paid()
+            invoice = getattr(instance.order, 'invoice', None)
+            if invoice:
+                invoice.is_paid = True
+                invoice.save(update_fields=['is_paid'])
+
+
+##################################################################################
+#                             Invoice Views                                        #
+##################################################################################
+
+class InvoiceListCreateView(generics.ListCreateAPIView):
+    serializer_class = InvoiceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role in ['admin', 'cashier']:
+            return Invoice.objects.all()
+        return Invoice.objects.filter(order__user=user)
+
+    def perform_create(self, serializer):
+        invoice_number = get_random_string(length=10).upper()
+        serializer.save(invoice_number=invoice_number)
+
+
+class InvoiceRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = InvoiceSerializer
+    queryset = Invoice.objects.all()
+    permission_classes = [IsAuthenticated]

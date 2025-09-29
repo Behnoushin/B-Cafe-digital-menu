@@ -1,7 +1,7 @@
 # -------------------   Django imports ------------------------
 from django.contrib import admin
 # -------------------   Apps imports ------------------------
-from .models import Order, OrderItem
+from .models import Order, OrderItem, Payment, Invoice
 
 #############################################
 #              OrderItemInline              #
@@ -43,9 +43,31 @@ class OrderItemAdmin(admin.ModelAdmin):
     ordering = ['id']
     list_per_page = 20
 
+#############################################
+#             Payment Admin                 #
+#############################################
 
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = ['id', 'order', 'amount', 'status', 'method', 'paid_at', 'created_at']
+    list_filter = ['status', 'method', 'created_at']
+    search_fields = ['order__id', 'order__user__username']
+    readonly_fields = ['created_at', 'paid_at']
+    ordering = ['-created_at']
+
+#############################################
+#             Invoice Admin                 #
+#############################################
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = ['invoice_number', 'order', 'total_amount', 'is_paid', 'created_at', 'due_date']
+    list_filter = ['is_paid', 'created_at']
+    search_fields = ['invoice_number', 'order__id', 'order__user__username']
+    readonly_fields = ['created_at']
+    ordering = ['-created_at']
+    
+    
 admin.site.register(Order, OrderAdmin)
 admin.site.register(OrderItem, OrderItemAdmin)
-
+admin.site.register(Payment, PaymentAdmin)
+admin.site.register(Invoice, InvoiceAdmin)
 
 

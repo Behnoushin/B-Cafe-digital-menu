@@ -1,7 +1,7 @@
 # -------------------  DRF imports   ------------------------
 from rest_framework import serializers
 # -------------------   Apps imports ------------------------
-from .models import Order, OrderItem
+from .models import Order, OrderItem, Payment, Invoice
 from menu.serializers import MenuItemSerializer
 from menu.models import MenuItem
 from utility.serializers import BaseSerializer
@@ -96,3 +96,31 @@ class OrderSerializer(BaseSerializer):
                 menu_item.stock -= item_data['quantity']
                 menu_item.save()
         return instance
+
+##################################################################################
+#                           Payment Serializer                                   #
+##################################################################################
+
+class PaymentSerializer(BaseSerializer):
+    order_id = serializers.PrimaryKeyRelatedField(
+        queryset=Order.objects.all(), source='order', write_only=True
+    )
+    order = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Payment
+        fields = ['id', 'order', 'order_id', 'amount', 'status', 'method', 'paid_at', 'created_at']
+
+##################################################################################
+#                           Invoice Serializer                                   #
+##################################################################################
+
+class InvoiceSerializer(BaseSerializer):
+    order_id = serializers.PrimaryKeyRelatedField(
+        queryset=Order.objects.all(), source='order', write_only=True
+    )
+    order = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Invoice
+        fields = ['id', 'invoice_number', 'order', 'order_id', 'total_amount', 'created_at', 'due_date', 'is_paid']
