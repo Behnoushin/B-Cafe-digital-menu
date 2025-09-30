@@ -37,6 +37,7 @@ class MenuItem(BaseModel):
     discount_percent = models.PositiveIntegerField(default=0)
     discount_start = models.DateTimeField(null=True, blank=True)
     discount_end = models.DateTimeField(null=True, blank=True)
+    sold_count = models.PositiveIntegerField(default=0)
     status = models.CharField(
         max_length=20,
         choices=ItemStatus.choices,

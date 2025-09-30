@@ -1,14 +1,15 @@
 # -----------------  Django imports   ------------------------
 from django.utils import timezone
 # -------------------  DRF imports   ------------------------
-from rest_framework import generics
+from rest_framework import generics, filters
 from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 # -------------------   Apps imports ------------------------
 from .models import Category, MenuItem
 from .serializers import CategorySerializer, MenuItemSerializer
-from .permissions import IsAdminOnly, IsAdminOrReadOnly
-from .filters import MenuItemFilter
+from .permissions import IsAdminOrReadOnly
+from .filters import MenuItemFilter, MenuItemPrepTimeFilter
+from .throttles import MenuItemListThrottle
 from utility.views import BaseAPIView
 
 ##################################################################################
@@ -71,9 +72,12 @@ class MenuItemList(BaseAPIView, generics.ListCreateAPIView):
     queryset = MenuItem.objects.all()
     serializer_class = MenuItemSerializer
     permission_classes = [IsAdminOrReadOnly]
-    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = MenuItemFilter
     search_fields = ['name', 'description']
+    ordering_fields = ['price', 'sold_count', 'created_at']
+    ordering = ['-created_at']
+    throttle_classes = [MenuItemListThrottle]
     
     def get(self, request, *args, **kwargs):
         """
@@ -181,3 +185,107 @@ class SpecialOfferDetail(BaseAPIView, generics.RetrieveUpdateDestroyAPIView):
         Delete a special offer item (admin only).
         """
         return self.destroy(request, *args, **kwargs)
+
+##################################################################################
+#                         TopSellingMenuItems Views                              #
+##################################################################################
+
+class TopSellingMenuItems(BaseAPIView, generics.ListAPIView):
+    """
+    API endpoint that returns the top 10 best-selling menu items.
+    Accessible by all users (read-only), admins can modify items via other endpoints.
+    """
+    serializer_class = MenuItemSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    ordering_fields = ['sold_count']
+    ordering = ['-sold_count']
+    throttle_classes = [MenuItemListThrottle]
+
+    def get_queryset(self):
+        # Order by sold_count descending and return top 10
+        return MenuItem.objects.order_by('-sold_count')[:10]
+
+##################################################################################
+#                           RecentMenuItems Views                                #
+##################################################################################
+
+class RecentMenuItems(BaseAPIView, generics.ListAPIView):
+    """
+    API endpoint that returns the 10 most recently added menu items.
+    Useful for showing new arrivals on the menu.
+    """
+    serializer_class = MenuItemSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    ordering_fields = ['created_at']
+    ordering = ['-created_at']
+    throttle_classes = [MenuItemListThrottle]
+
+    def get_queryset(self):
+        # Order by creation date descending
+        return MenuItem.objects.order_by('-created_at')[:10]
+    
+##################################################################################
+#                         MenuItemsByPrepTime Views                              #
+##################################################################################
+
+class MenuItemsByPrepTime(BaseAPIView, generics.ListAPIView):
+    """
+    API endpoint to filter menu items based on preparation time.
+    Users can optionally provide a maximum preparation time to filter items.
+    """
+    serializer_class = MenuItemSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    filterset_class = MenuItemPrepTimeFilter
+    filter_backends = [DjangoFilterBackend]
+
+    def get_queryset(self):
+        # Exclude items with null preparation time
+        return MenuItem.objects.exclude(preparation_time__isnull=True)
+
+##################################################################################
+#                         ActiveMenuItems Views                                  #
+##################################################################################
+
+class ActiveMenuItems(BaseAPIView, generics.ListAPIView):
+    """
+    API endpoint to list all menu items that are currently available (in stock).
+    Useful for users to see items that can be ordered.
+    """
+    serializer_class = MenuItemSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    throttle_classes = [MenuItemListThrottle]
+
+    def get_queryset(self):
+        return MenuItem.objects.filter(status='available')
+
+##################################################################################
+#                         OutOfStockMenuItems Views                              #
+##################################################################################
+
+class OutOfStockMenuItems(BaseAPIView, generics.ListAPIView):
+    """
+    API endpoint to list all menu items that are out of stock.
+    Mainly for admins to monitor inventory status.
+    """
+    serializer_class = MenuItemSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    throttle_classes = [MenuItemListThrottle]
+
+    def get_queryset(self):
+        return MenuItem.objects.filter(status='out_of_stock')
+
+##################################################################################
+#                         MenuItemsByCategory Views                              #
+##################################################################################
+
+class MenuItemsByCategory(BaseAPIView, generics.ListAPIView):
+    """
+    API endpoint to retrieve menu items filtered by category ID.
+    Allows users to view items belonging to a specific category.
+    """
+    serializer_class = MenuItemSerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+    def get_queryset(self):
+        category_id = self.kwargs['category_id']
+        return MenuItem.objects.filter(category_id=category_id)
