@@ -1,10 +1,13 @@
 # -------------------  Django imports   ------------------------
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.db import models
+from django.core.mail import send_mail
 # -------------------  DRF imports   ------------------------
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
 # -------------------   Apps imports ------------------------
 from .models import Order, Payment, Invoice
 from .serializers import OrderSerializer, PaymentSerializer, InvoiceSerializer
@@ -96,6 +99,84 @@ class OrderRetrieveUpdateDestroyView(BaseAPIView, generics.RetrieveUpdateDestroy
             instance.paid_at = timezone.now()
             instance.save(update_fields=["paid_at"])
 
+##################################################################################
+#                             OrderByUser Views                                  #
+##################################################################################
+
+class OrderByUserView(BaseAPIView, generics.ListAPIView):
+    """
+    Returns orders for the current authenticated user.
+    """
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user)
+
+##################################################################################
+#                           OrdersByStatus Views                                 #
+##################################################################################
+
+class OrdersByStatusView(BaseAPIView, generics.ListAPIView):
+    """
+    Returns orders filtered by a given status query parameter.
+    """
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        status = self.request.query_params.get('status')
+        if status:
+            return Order.objects.filter(status=status)
+        return Order.objects.all()
+
+##################################################################################
+#                             TopOrders Views                                    #
+##################################################################################
+
+class TopOrdersView(BaseAPIView, generics.ListAPIView):
+    """
+    Returns top 10 orders by total price.
+    """
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Order.objects.all().order_by('-total_price')[:10]
+
+##################################################################################
+#                           OrderHistory Views                                   #
+##################################################################################
+
+class OrderHistoryView(BaseAPIView, generics.ListAPIView):
+    """
+    Returns all orders of the current user sorted by creation time.
+    """
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).order_by('-created_at')
+
+##################################################################################
+#                       ChangeOrderStatus Views                                  #
+##################################################################################
+
+class ChangeOrderStatusView(BaseAPIView, generics.UpdateAPIView):
+    """
+    Allows Admin or Cashier to change the status of an order.
+    """
+    serializer_class = OrderSerializer
+    queryset = Order.objects.all()
+    permission_classes = [IsAdminUser | IsCashierUser]
+
+    def perform_update(self, serializer):
+        new_status = serializer.validated_data.get('status')
+        order = serializer.save()
+        if new_status == OrderStatusChoices.PAID and not order.paid_at:
+            order.paid_at = timezone.now()
+            order.save(update_fields=['paid_at'])
+
 
 ##################################################################################
 #                             Payment Views                                        #
@@ -134,6 +215,87 @@ class PaymentRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
             if invoice:
                 invoice.is_paid = True
                 invoice.save(update_fields=['is_paid'])
+    
+##################################################################################
+#                         PaymentsByOrder Views                                  #
+##################################################################################
+
+class PaymentsByOrderView(BaseAPIView, generics.ListAPIView):
+    """
+    Returns all payments associated with a specific order.
+    """
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        order_id = self.kwargs['order_id']
+        return Payment.objects.filter(order__id=order_id)
+
+##################################################################################
+#                         PaymentsByStatus Views                                 #
+##################################################################################
+
+class PaymentsByStatusView(BaseAPIView, generics.ListAPIView):
+    """
+    Returns payments filtered by their status (Paid/Pending).
+    """
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        status = self.request.query_params.get('status')
+        if status:
+            return Payment.objects.filter(status=status)
+        return Payment.objects.all()
+
+##################################################################################
+#                           RecentPayments Views                                 #
+##################################################################################
+
+class RecentPaymentsView(BaseAPIView, generics.ListAPIView):
+    """
+    Returns the last 10 payments by creation date.
+    """
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Payment.objects.all().order_by('-created_at')[:10]
+
+##################################################################################
+#                           TotalCollected Views                                 #
+##################################################################################
+
+class TotalCollectedView(BaseAPIView, generics.GenericAPIView):
+    """
+    Returns the total amount of all successful payments.
+    Read-only endpoint.
+    """
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        total = Payment.objects.filter(status='paid').aggregate(total=models.Sum('amount'))['total'] or 0
+        return Response({'total_collected': total})
+
+##################################################################################
+#                           MarkPaymentAsPaid Views                              #
+##################################################################################
+
+class MarkPaymentAsPaidView(BaseAPIView, generics.UpdateAPIView):
+    """
+    Allows Admin or Cashier to mark a payment as 'Paid'.
+    """
+    serializer_class = PaymentSerializer
+    queryset = Payment.objects.all()
+    permission_classes = [IsAdminUser | IsCashierUser]
+
+    def perform_update(self, serializer):
+        payment = serializer.save(status='paid')
+        payment.mark_as_paid()
+        invoice = getattr(payment.order, 'invoice', None)
+        if invoice:
+            invoice.is_paid = True
+            invoice.save(update_fields=['is_paid'])
 
 
 ##################################################################################
@@ -159,3 +321,80 @@ class InvoiceRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = InvoiceSerializer
     queryset = Invoice.objects.all()
     permission_classes = [IsAuthenticated]
+    
+##################################################################################
+#                           InvoicesByUser Views                                 #
+##################################################################################
+
+class InvoicesByUserView(BaseAPIView, generics.ListAPIView):
+    """
+    Returns all invoices for the current user.
+    """
+    serializer_class = InvoiceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Invoice.objects.filter(order__user=self.request.user)
+
+##################################################################################
+#                           UnpaidInvoices Views                                 #
+##################################################################################
+
+class UnpaidInvoicesView(BaseAPIView, generics.ListAPIView):
+    """
+    Returns all unpaid invoices.
+    """
+    serializer_class = InvoiceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Invoice.objects.filter(is_paid=False)
+
+##################################################################################
+#                            InvoiceDetail Views                                 #
+##################################################################################
+
+class InvoiceDetailView(BaseAPIView, generics.RetrieveAPIView):
+    """
+    Returns detailed information of a specific invoice.
+    """
+    serializer_class = InvoiceSerializer
+    queryset = Invoice.objects.all()
+    permission_classes = [IsAuthenticated]
+
+##################################################################################
+#                            GenerateInvoic Views                                #
+##################################################################################
+
+class GenerateInvoiceView(BaseAPIView, generics.CreateAPIView):
+    """
+    Creates a new invoice with a unique invoice number.
+    """
+    serializer_class = InvoiceSerializer
+    permission_classes = [IsAdminUser | IsCashierUser]
+
+    def perform_create(self, serializer):
+        invoice_number = get_random_string(length=10).upper()
+        serializer.save(invoice_number=invoice_number)
+
+##################################################################################
+#                            SendInvoiceEmail Views                              #
+##################################################################################
+
+class SendInvoiceEmailView(BaseAPIView, generics.GenericAPIView):
+    """
+    Sends invoice email to the user for a given invoice.
+    """
+    serializer_class = InvoiceSerializer
+    permission_classes = [IsAdminUser | IsCashierUser]
+
+    def post(self, request, pk):
+        invoice = Invoice.objects.get(pk=pk)
+        send_mail(
+            subject=f"Invoice #{invoice.invoice_number}",
+            message=f"Your invoice total is {invoice.total_amount}.",
+            from_email="no-reply@b-cafe.com",
+            recipient_list=[invoice.order.user.email],
+            fail_silently=True
+        )
+        return Response({'status': 'email sent'})
