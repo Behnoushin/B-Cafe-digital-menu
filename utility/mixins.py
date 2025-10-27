@@ -1,13 +1,15 @@
-from rest_framework import status
-from rest_framework.response import Response
+from django.utils import timezone
 
 class SoftDeleteMixin:
     def perform_destroy(self, instance):
         instance.is_deleted = True
+        instance.deleted_at = timezone.now()
         instance.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return instance
 
 class RestoreMixin:
     def perform_restore(self, instance):
-        instance.restore()
-        return Response(status=status.HTTP_200_OK)
+        instance.is_deleted = False
+        instance.deleted_at = None
+        instance.save()
+        return instance

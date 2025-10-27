@@ -4,34 +4,42 @@ from django.contrib import admin
 from .models import AboutUs, ContactUs, WorkingHours
 
 #############################################
+#                ‌Base Admin                 #
+#############################################
+
+class BaseAdmin(admin.ModelAdmin):
+    readonly_fields = ["id", "created_at", "updated_at"]
+    list_per_page = 20
+    list_filter = ["is_deleted", "created_at"]
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(is_deleted=False)
+    
+#############################################
 #              AboutUs Admin                #
 #############################################
 
-class AboutUsAdmin(admin.ModelAdmin):
+class AboutUsAdmin(BaseAdmin):
     list_display = ["id", "title", "created_at", "updated_at"]
     search_fields = ["title", "content"]
     ordering = ["id"]
-    readonly_fields = ["id", "created_at", "updated_at"]
     date_hierarchy = 'created_at'
-    list_per_page = 20
     
 #############################################
 #              ContactUs Admin              #
 #############################################
 
-class ContactUsAdmin(admin.ModelAdmin):
+class ContactUsAdmin(BaseAdmin):
     list_display = ["id", "phone_number", "created_at", "updated_at"]
     search_fields = ["phone_number"]
     ordering = ["id"]
-    readonly_fields = ["id", "created_at", "updated_at"]
     date_hierarchy = 'created_at'
-    list_per_page = 20
  
 #############################################
 #              WorkingHours Admin           #
 #############################################
    
-class WorkingHoursAdmin(admin.ModelAdmin):
+class WorkingHoursAdmin(BaseAdmin):
     list_display = ['day', 'open_time', 'close_time']
     ordering = ['day']
     
