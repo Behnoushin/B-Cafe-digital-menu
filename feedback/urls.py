@@ -1,45 +1,45 @@
 from django.urls import path
 from .views import (
-    MyFeedbackList,
-    FeedbackDetailView,
-    UpdateFeedback,
-    DeleteFeedback,
+    AdminFeedbackList,
     FeedbackByStatus,
-    RespondToFeedback,
     FeedbackByType,
+    RespondToFeedback,
     RecentFeedbacks,
     FeedbackAnalytics,
+    ExportFeedbacks,
+    FeedbackCreate,
+    MyFeedbackList,
+    FeedbackDetail,
+    UpdateFeedback,
+    DeleteFeedback,
+    FeedbackSummaryForOrder,
     PublicFeedbackList,
     ItemFeedbackList,
     TopRatedItems,
-    FeedbackSummaryForOrder,
-    RevisitIntentStats,
-    ExportFeedbacks
+    FeedbackHistoryView
 )
 
 urlpatterns = [
-    
-    # User Feedback URLs
-    path("my-feedbacks/", MyFeedbackList.as_view(), name="my-feedbacks"),
-    path("feedbacks/<int:pk>/", FeedbackDetailView.as_view(), name="feedback-detail"),
-    path("feedbacks/<int:pk>/update/", UpdateFeedback.as_view(), name="feedback-update"),
-    path("feedbacks/<int:pk>/delete/", DeleteFeedback.as_view(), name="feedback-delete"),
+    # ----------------- Admin URLs -----------------
+    path('admin/list/', AdminFeedbackList.as_view(), name='admin-feedback-list'),
+    path('admin/status/', FeedbackByStatus.as_view(), name='admin-feedback-by-status'),
+    path('admin/type/', FeedbackByType.as_view(), name='admin-feedback-by-type'),
+    path('admin/respond/<int:pk>/', RespondToFeedback.as_view(), name='admin-respond-feedback'),
+    path('admin/recent/', RecentFeedbacks.as_view(), name='admin-recent-feedbacks'),
+    path('admin/analytics/', FeedbackAnalytics.as_view(), name='admin-feedback-analytics'),
+    path('admin/export/', ExportFeedbacks.as_view(), name='admin-feedback-export'),
+    path('admin/history/', FeedbackHistoryView.as_view(), name='admin-feedback-history'),
 
-    # Admin Feedback URLs
-    path("feedbacks/by-status/", FeedbackByStatus.as_view(), name="feedback-by-status"),
-    path("feedbacks/respond/<int:pk>/", RespondToFeedback.as_view(), name="respond-feedback"),
-    path("feedbacks/by-type/", FeedbackByType.as_view(), name="feedback-by-type"),
-    path("feedbacks/recent/", RecentFeedbacks.as_view(), name="recent-feedbacks"),
-    path("feedbacks/analytics/", FeedbackAnalytics.as_view(), name="feedback-analytics"),
-    path("feedbacks/export/", ExportFeedbacks.as_view(), name="export-feedbacks"),
+    # ----------------- User URLs -----------------
+    path('create/', FeedbackCreate.as_view(), name='feedback-create'),
+    path('my/', MyFeedbackList.as_view(), name='my-feedback-list'),
+    path('detail/<int:pk>/', FeedbackDetail.as_view(), name='feedback-detail'),
+    path('update/<int:pk>/', UpdateFeedback.as_view(), name='feedback-update'),
+    path('delete/<int:pk>/', DeleteFeedback.as_view(), name='feedback-delete'),
+    path('summary/order/', FeedbackSummaryForOrder.as_view(), name='feedback-summary-order'),
 
-    # Public Feedback URLs 
-    path("feedbacks/public/", PublicFeedbackList.as_view(), name="public-feedbacks"),
-    path("feedbacks/item/<int:item_id>/", ItemFeedbackList.as_view(), name="item-feedbacks"),
-    path("feedbacks/top-rated-items/", TopRatedItems.as_view(), name="top-rated-items"),
-
-    # Special / Stats Feedback URLs 
-    path("feedbacks/order/<int:order_id>/summary/", FeedbackSummaryForOrder.as_view(), name="feedback-summary-order"),
-    path("feedbacks/revisit-intent/", RevisitIntentStats.as_view(), name="revisit-intent-stats"),
-    
+    # ----------------- Public URLs -----------------
+    path('public/', PublicFeedbackList.as_view(), name='public-feedback-list'),
+    path('item/', ItemFeedbackList.as_view(), name='item-feedback-list'),
+    path('top-rated/', TopRatedItems.as_view(), name='top-rated-items'),
 ]

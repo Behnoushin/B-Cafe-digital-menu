@@ -1,31 +1,130 @@
 # -------------------  DRF imports   ------------------------
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
+# -------------------  DRF imports   ------------------------
+from django.conf import settings
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.db.models import Avg
 # -------------------   Apps imports ------------------------
 from .models import Feedback
 from .serializers import FeedbackSerializer
 from menu.permissions import IsAdminOnly
+from utility.mixins import SoftDeleteMixin, RestoreMixin
+
+
+CACHE_TTL = getattr(settings, 'CACHE_TTL', 60*5)
 
 ##################################################################################
-#                       Feedback List-Create Views                               #
+#                              Base Feedback View                                #
 ##################################################################################
 
-class FeedbackListView(generics.ListAPIView):
+class BaseFeedbackView(generics.GenericAPIView):
     """
-    List all feedbacks in the system (Admin only).
+    Base view for all Feedback-related views.
+    Includes soft delete, restore, and caching.
     """
     queryset = Feedback.objects.all()
     serializer_class = FeedbackSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return self.queryset.filter(is_deleted=False)
+
+    def perform_destroy(self, instance):
+        """
+        Soft delete an instance.
+        """
+        SoftDeleteMixin.perform_destroy(self, instance)
+
+    def perform_restore(self, instance):
+        """
+        Restore a soft-deleted instance.
+        """
+        RestoreMixin.perform_restore(self, instance)
+
+
+##################################################################################
+#                              Admin Views                                       #
+##################################################################################
+
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
+class AdminFeedbackList(BaseFeedbackView, generics.ListAPIView):
+    """List all feedbacks (Admin only)."""
     permission_classes = [IsAdminOnly]
 
 
-class FeedbackCreateView(generics.CreateAPIView):
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
+class FeedbackByStatus(BaseFeedbackView, generics.ListAPIView):
+    """Filter feedbacks by status (PENDING, REVIEWED) for admin."""
+    permission_classes = [IsAdminOnly]
+
+    def get_queryset(self):
+        status = self.request.query_params.get('status')
+        if status:
+            return super().get_queryset().filter(status=status)
+        return super().get_queryset()
+
+
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
+class FeedbackByType(BaseFeedbackView, generics.ListAPIView):
+    """Filter feedbacks by type (Service, Staff, Environment) for admin."""
+    permission_classes = [IsAdminOnly]
+
+    def get_queryset(self):
+        f_type = self.request.query_params.get('type')
+        if f_type:
+            return super().get_queryset().filter(feedback_type=f_type)
+        return super().get_queryset()
+
+
+class RespondToFeedback(BaseFeedbackView, generics.UpdateAPIView):
+    """Admin can respond to feedback and mark as REVIEWED."""
+    permission_classes = [IsAdminOnly]
+
+    def get_queryset(self):
+        return super().get_queryset()
+
+    def perform_update(self, serializer):
+        serializer.save(status='reviewed')
+
+
+class RecentFeedbacks(BaseFeedbackView, generics.ListAPIView):
+    """Return the last 10 feedbacks for the admin dashboard."""
+    permission_classes = [IsAdminOnly]
+
+    def get_queryset(self):
+        return super().get_queryset().order_by('-created_at')[:10]
+
+
+class FeedbackAnalytics(BaseFeedbackView, generics.RetrieveAPIView):
+    """Provide aggregated statistics for feedbacks."""
+    permission_classes = [IsAdminOnly]
+
+
+class ExportFeedbacks(BaseFeedbackView, generics.ListAPIView):
+    """Export all feedbacks to CSV/Excel (Admin only)."""
+    permission_classes = [IsAdminOnly]
+
+
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
+class FeedbackHistoryView(BaseFeedbackView, generics.ListAPIView):
     """
-    Allow authenticated users to create a new feedback.
-    Captures user IP and user agent automatically.
+    List all historical records of feedbacks (Admin only).
+    Uses django-simple-history.
     """
-    queryset = Feedback.objects.all()
-    serializer_class = FeedbackSerializer
+    permission_classes = [IsAdminOnly]
+
+    def get_queryset(self):
+        # Access history from simple_history
+        return Feedback.history.all()
+    
+##################################################################################
+#                              User Views                                        #
+##################################################################################
+
+class FeedbackCreate(BaseFeedbackView, generics.CreateAPIView):
+    """Authenticated users can create feedback."""
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
@@ -35,239 +134,74 @@ class FeedbackCreateView(generics.CreateAPIView):
         serializer.save(user=user, user_ip=user_ip, user_agent=user_agent)
 
 
-##################################################################################
-#                             MyFeedbackList                                     #
-##################################################################################
-
-class MyFeedbackList(generics.ListAPIView):
-    """
-    Returns all feedbacks created by the logged-in user.
-    """
-    serializer_class = FeedbackSerializer
+class MyFeedbackList(BaseFeedbackView, generics.ListAPIView):
+    """List all feedbacks created by the logged-in user."""
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Feedback.objects.filter(user=self.request.user)
+        return super().get_queryset().filter(user=self.request.user)
 
 
-##################################################################################
-#                             FeedbackDetailView                                  #
-##################################################################################
-
-class FeedbackDetailView(generics.RetrieveAPIView):
-    """
-    Retrieve details of a specific feedback for the logged-in user.
-    """
-    serializer_class = FeedbackSerializer
+class FeedbackDetail(BaseFeedbackView, generics.RetrieveAPIView):
+    """Retrieve details of a specific feedback for the logged-in user."""
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Feedback.objects.filter(user=self.request.user)
+        return super().get_queryset().filter(user=self.request.user)
 
 
-##################################################################################
-#                             UpdateFeedback                                      #
-##################################################################################
-
-class UpdateFeedback(generics.UpdateAPIView):
-    """
-    Allow user to update their feedback only if status is PENDING.
-    """
-    serializer_class = FeedbackSerializer
+class UpdateFeedback(BaseFeedbackView, generics.UpdateAPIView):
+    """Allow users to update their feedback if status is PENDING."""
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Feedback.objects.filter(user=self.request.user, status='pending')
+        return super().get_queryset().filter(user=self.request.user, status='pending')
 
 
-##################################################################################
-#                             DeleteFeedback                                      #
-##################################################################################
-
-class DeleteFeedback(generics.DestroyAPIView):
-    """
-    Allow user to delete their feedback before it is reviewed by admin.
-    """
-    serializer_class = FeedbackSerializer
+class DeleteFeedback(BaseFeedbackView, generics.DestroyAPIView):
+    """Allow users to delete their feedback before it is reviewed by admin."""
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Feedback.objects.filter(user=self.request.user, status='pending')
+        return super().get_queryset().filter(user=self.request.user, status='pending')
 
 
-##################################################################################
-#                             FeedbackByStatus                                    #
-##################################################################################
-
-class FeedbackByStatus(generics.ListAPIView):
-    """
-    Filter feedbacks based on status (PENDING, REVIEWED) for admin.
-    """
-    serializer_class = FeedbackSerializer
-    permission_classes = [IsAdminOnly]
-
-    def get_queryset(self):
-        status = self.request.query_params.get('status')
-        if status:
-            return Feedback.objects.filter(status=status)
-        return Feedback.objects.all()
-
-
-##################################################################################
-#                             RespondToFeedback                                  #
-##################################################################################
-
-class RespondToFeedback(generics.UpdateAPIView):
-    """
-    Admin can respond to feedback and mark status as REVIEWED.
-    """
-    serializer_class = FeedbackSerializer
-    permission_classes = [IsAdminOnly]
-
-    def get_queryset(self):
-        return Feedback.objects.all()
-
-    def perform_update(self, serializer):
-        serializer.save(status='reviewed')
-
-
-##################################################################################
-#                             FeedbackByType                                     #
-##################################################################################
-
-class FeedbackByType(generics.ListAPIView):
-    """
-    Filter feedbacks by type (Service, Staff, Environment) for admin.
-    """
-    serializer_class = FeedbackSerializer
-    permission_classes = [IsAdminOnly]
-
-    def get_queryset(self):
-        feedback_type = self.request.query_params.get('type')
-        if feedback_type:
-            return Feedback.objects.filter(feedback_type=feedback_type)
-        return Feedback.objects.all()
-
-
-##################################################################################
-#                             RecentFeedbacks                                    #
-##################################################################################
-
-class RecentFeedbacks(generics.ListAPIView):
-    """
-    Return the last 10 feedbacks for admin dashboard.
-    """
-    serializer_class = FeedbackSerializer
-    permission_classes = [IsAdminOnly]
-
-    def get_queryset(self):
-        return Feedback.objects.all().order_by('-created_at')[:10]
-
-
-##################################################################################
-#                             FeedbackAnalytics                                   #
-##################################################################################
-
-class FeedbackAnalytics(generics.RetrieveAPIView):
-    """
-    Read-only aggregated statistics for dashboard (avg food_rating, service satisfaction, etc.).
-    """
-    serializer_class = FeedbackSerializer  # Can create a custom analytics serializer
-    permission_classes = [IsAdminOnly]
-
-    def get_queryset(self):
-        return Feedback.objects.all()
-
-
-##################################################################################
-#                             PublicFeedbackList                                 #
-##################################################################################
-
-class PublicFeedbackList(generics.ListAPIView):
-    """
-    Display feedbacks that are reviewed (status=REVIEWED) for menu items publicly.
-    """
-    serializer_class = FeedbackSerializer
-    permission_classes = []
-
-    def get_queryset(self):
-        return Feedback.objects.filter(status='reviewed')
-
-
-##################################################################################
-#                             ItemFeedbackList                                   #
-##################################################################################
-
-class ItemFeedbackList(generics.ListAPIView):
-    """
-    List all feedbacks for a specific menu item.
-    """
-    serializer_class = FeedbackSerializer
-    permission_classes = []
-
-    def get_queryset(self):
-        item_id = self.request.query_params.get('item_id')
-        return Feedback.objects.filter(item__id=item_id, status='reviewed')
-
-
-##################################################################################
-#                             TopRatedItems                                      #
-##################################################################################
-
-class TopRatedItems(generics.ListAPIView):
-    """
-    Return menu items with highest average food_rating.
-    """
-    serializer_class = FeedbackSerializer  # Or a custom serializer for item ratings
-    permission_classes = []
-
-    def get_queryset(self):
-        from django.db.models import Avg
-        return Feedback.objects.filter(status='reviewed').values('item__id', 'item__name')\
-            .annotate(avg_rating=Avg('food_rating')).order_by('-avg_rating')[:10]
-
-
-##################################################################################
-#                             FeedbackSummaryForOrder                             #
-##################################################################################
-
-class FeedbackSummaryForOrder(generics.ListAPIView):
-    """
-    Show feedback related to a specific order for the customer.
-    """
-    serializer_class = FeedbackSerializer
+class FeedbackSummaryForOrder(BaseFeedbackView, generics.ListAPIView):
+    """Show feedbacks related to a specific order for the customer."""
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         order_id = self.request.query_params.get('order_id')
-        return Feedback.objects.filter(order__id=order_id, user=self.request.user)
+        return super().get_queryset().filter(order__id=order_id, user=self.request.user)
 
 
 ##################################################################################
-#                             RevisitIntentStats                                  #
+#                              Public Views                                      #
 ##################################################################################
 
-class RevisitIntentStats(generics.RetrieveAPIView):
-    """
-    Return percentage of users who intend to revisit (revisit_intent=YES).
-    """
-    serializer_class = FeedbackSerializer  # Can use a custom serializer for stats
-    permission_classes = [IsAdminOnly]
+class PublicFeedbackList(BaseFeedbackView, generics.ListAPIView):
+    """Display all reviewed feedbacks publicly."""
+    permission_classes = []
 
     def get_queryset(self):
-        return Feedback.objects.all()
+        return super().get_queryset().filter(status='reviewed')
 
 
-##################################################################################
-#                             ExportFeedbacks                                     #
-##################################################################################
-
-class ExportFeedbacks(generics.ListAPIView):
-    """
-    Admin can export all feedbacks to CSV/Excel.
-    """
-    serializer_class = FeedbackSerializer
-    permission_classes = [IsAdminOnly]
+class ItemFeedbackList(BaseFeedbackView, generics.ListAPIView):
+    """List all feedbacks for a specific menu item."""
+    permission_classes = []
 
     def get_queryset(self):
-        return Feedback.objects.all()
+        item_id = self.request.query_params.get('item_id')
+        return super().get_queryset().filter(item__id=item_id, status='reviewed')
+
+
+class TopRatedItems(BaseFeedbackView, generics.ListAPIView):
+    """Return menu items with highest average food rating."""
+    permission_classes = []
+
+    def get_queryset(self):
+        return super().get_queryset().filter(status='reviewed')\
+            .values('item__id', 'item__name')\
+            .annotate(avg_rating=Avg('food_rating'))\
+            .order_by('-avg_rating')

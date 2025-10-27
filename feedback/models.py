@@ -5,7 +5,12 @@ from django.conf import settings
 from menu.models import MenuItem
 from orders.models import Order
 from utility.models import BaseModel
-from .choices import SatisfactionChoices, FoodRatingChoices, FeedbackStatus, FeedbackType
+from .choices import (
+    SatisfactionChoices,
+    FoodRatingChoices,
+    FeedbackStatus,
+    FeedbackType
+)
 
 ##################################################################################
 #                           Feedback Model                                        #

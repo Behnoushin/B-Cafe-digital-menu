@@ -1,7 +1,7 @@
 from django.db.models import TextChoices
 
 #############################################
-#           Satisfaction Choices             #
+#           Satisfaction Choices            #
 #############################################
 
 class SatisfactionChoices(TextChoices):
