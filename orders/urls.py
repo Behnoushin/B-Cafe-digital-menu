@@ -15,6 +15,9 @@ from .views import (
     InvoiceListCreateView, InvoiceRetrieveUpdateDestroyView, InvoicesByUserView,
     UnpaidInvoicesView, InvoiceDetailView, GenerateInvoiceView,
     SendInvoiceEmailView,
+    
+    # Invoice Restore & History 
+    InvoiceRestoreView, InvoiceHistoryView
 )
 
 urlpatterns = [
@@ -45,4 +48,8 @@ urlpatterns = [
     path('invoices/detail/<int:pk>/', InvoiceDetailView.as_view(), name='invoice-detail-view'),
     path('invoices/generate/', GenerateInvoiceView.as_view(), name='generate-invoice'),
     path('invoices/<int:pk>/send-email/', SendInvoiceEmailView.as_view(), name='send-invoice-email'),
+    
+    # Invoice Restore & History URLs
+    path('invoices/<int:pk>/restore/', InvoiceRestoreView.as_view(), name='invoice-restore'),
+    path('invoices/history/', InvoiceHistoryView.as_view(), name='invoice-history'),
 ]

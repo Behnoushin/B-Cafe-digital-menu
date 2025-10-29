@@ -3,22 +3,34 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.db import models
 from django.core.mail import send_mail
+from django.utils.decorators import method_decorator
+from django.conf import settings
+from django.core.cache import cache
+from django.views.decorators.cache import cache_page
+
 # -------------------  DRF imports   ------------------------
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
+from rest_framework.views import APIView
+
 # -------------------   Apps imports ------------------------
 from .models import Order, Payment, Invoice
 from .serializers import OrderSerializer, PaymentSerializer, InvoiceSerializer
 from .permissions import IsAdminUser, IsCashierUser, IsWaiterUser, IsCustomerUser
 from utility.views import BaseAPIView
 from .choices import OrderStatusChoices
+from utility.mixins import RestoreMixin
+
+# ------------------- Constants ------------------------
+CACHE_TTL = getattr(settings, 'CACHE_TTL', 60 * 5)
 
 ##################################################################################
 #                             Order Views                                        #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
 class OrderListCreateView(BaseAPIView, generics.ListCreateAPIView):
     serializer_class = OrderSerializer
 
@@ -103,6 +115,7 @@ class OrderRetrieveUpdateDestroyView(BaseAPIView, generics.RetrieveUpdateDestroy
 #                             OrderByUser Views                                  #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
 class OrderByUserView(BaseAPIView, generics.ListAPIView):
     """
     Returns orders for the current authenticated user.
@@ -117,6 +130,7 @@ class OrderByUserView(BaseAPIView, generics.ListAPIView):
 #                           OrdersByStatus Views                                 #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
 class OrdersByStatusView(BaseAPIView, generics.ListAPIView):
     """
     Returns orders filtered by a given status query parameter.
@@ -134,6 +148,7 @@ class OrdersByStatusView(BaseAPIView, generics.ListAPIView):
 #                             TopOrders Views                                    #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
 class TopOrdersView(BaseAPIView, generics.ListAPIView):
     """
     Returns top 10 orders by total price.
@@ -148,6 +163,7 @@ class TopOrdersView(BaseAPIView, generics.ListAPIView):
 #                           OrderHistory Views                                   #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
 class OrderHistoryView(BaseAPIView, generics.ListAPIView):
     """
     Returns all orders of the current user sorted by creation time.
@@ -220,6 +236,7 @@ class PaymentRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 #                         PaymentsByOrder Views                                  #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
 class PaymentsByOrderView(BaseAPIView, generics.ListAPIView):
     """
     Returns all payments associated with a specific order.
@@ -235,6 +252,7 @@ class PaymentsByOrderView(BaseAPIView, generics.ListAPIView):
 #                         PaymentsByStatus Views                                 #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
 class PaymentsByStatusView(BaseAPIView, generics.ListAPIView):
     """
     Returns payments filtered by their status (Paid/Pending).
@@ -252,6 +270,7 @@ class PaymentsByStatusView(BaseAPIView, generics.ListAPIView):
 #                           RecentPayments Views                                 #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
 class RecentPaymentsView(BaseAPIView, generics.ListAPIView):
     """
     Returns the last 10 payments by creation date.
@@ -266,6 +285,7 @@ class RecentPaymentsView(BaseAPIView, generics.ListAPIView):
 #                           TotalCollected Views                                 #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
 class TotalCollectedView(BaseAPIView, generics.GenericAPIView):
     """
     Returns the total amount of all successful payments.
@@ -302,6 +322,7 @@ class MarkPaymentAsPaidView(BaseAPIView, generics.UpdateAPIView):
 #                             Invoice Views                                        #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
 class InvoiceListCreateView(generics.ListCreateAPIView):
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
@@ -326,6 +347,7 @@ class InvoiceRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 #                           InvoicesByUser Views                                 #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
 class InvoicesByUserView(BaseAPIView, generics.ListAPIView):
     """
     Returns all invoices for the current user.
@@ -340,6 +362,7 @@ class InvoicesByUserView(BaseAPIView, generics.ListAPIView):
 #                           UnpaidInvoices Views                                 #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
 class UnpaidInvoicesView(BaseAPIView, generics.ListAPIView):
     """
     Returns all unpaid invoices.
@@ -354,6 +377,7 @@ class UnpaidInvoicesView(BaseAPIView, generics.ListAPIView):
 #                            InvoiceDetail Views                                 #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
 class InvoiceDetailView(BaseAPIView, generics.RetrieveAPIView):
     """
     Returns detailed information of a specific invoice.
@@ -398,3 +422,22 @@ class SendInvoiceEmailView(BaseAPIView, generics.GenericAPIView):
             fail_silently=True
         )
         return Response({'status': 'email sent'})
+    
+##################################################################################
+#                         Restore & History Views                                 #
+##################################################################################
+
+class InvoiceRestoreView(RestoreMixin, APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, pk):
+        instance = Invoice.objects.get(pk=pk)
+        self.perform_restore(instance)
+        return Response({"success": f"Invoice '{instance.id}' restored"}, status=200)
+
+class InvoiceHistoryView(generics.ListAPIView):
+    serializer_class = InvoiceSerializer
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        return Invoice.history.all()

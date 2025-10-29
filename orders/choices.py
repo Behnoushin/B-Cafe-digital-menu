@@ -1,16 +1,16 @@
-from django.db import models
+from django.db.models import TextChoices
 
-class OrderStatusChoices(models.TextChoices):
+class OrderStatusChoices(TextChoices):
     PENDING = 'pending', 'Pending'
     CONFIRMED = 'confirmed', 'Confirmed'
     PAID = 'paid', 'Paid'
     CANCELLED = 'cancelled', 'Cancelled'
 
-class PaymentStatusChoices(models.TextChoices):
+class PaymentStatusChoices(TextChoices):
     PENDING = 'pending', 'Pending'
     PAID = 'paid', 'Paid'
     FAILED = 'failed', 'Failed'
 
-class PaymentMethodChoices(models.TextChoices):
+class PaymentMethodChoices(TextChoices):
     CASH = 'cash', 'Cash'
     ONLINE = 'online', 'Online'
