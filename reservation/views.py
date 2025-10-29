@@ -1,17 +1,34 @@
 # -------------------  Django imports   ------------------------
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.core.cache import cache
+from django.conf import settings
+
 # -------------------  DRF imports   ------------------------
-from rest_framework import generics
+from rest_framework import generics, status
+from rest_framework.permissions import IsAdminUser
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
 # -------------------   Apps imports ------------------------
 from .models import Reservation , Table
 from .serializers import ReservationSerializer, TableSerializer
 from .permissions import IsAdminOrCreateOnly
 from utility.views import BaseAPIView 
+from utility.mixins import RestoreMixin
+from menu.models import MenuItem
+
+
+# ------------------- Constants ------------------------
+CACHE_TTL = getattr(settings, 'CACHE_TTL', 60 * 5)
+
 
 ##################################################################################
 #                             Reservation Views                                  #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='get')
 class ReservationList(BaseAPIView, generics.ListCreateAPIView):
     queryset = Reservation.objects.all()
     serializer_class = ReservationSerializer
@@ -69,6 +86,7 @@ class ReservationDetail(BaseAPIView, generics.RetrieveUpdateDestroyAPIView):
 #                         ReservationsByDate Views                                #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='get')
 class ReservationsByDate(BaseAPIView, generics.ListAPIView):
     """
     API endpoint to list all reservations for a specific date.
@@ -85,6 +103,7 @@ class ReservationsByDate(BaseAPIView, generics.ListAPIView):
 #                         ReservationsByTable Views                               #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='get')
 class ReservationsByTable(BaseAPIView, generics.ListAPIView):
     """
     API endpoint to list all reservations for a specific table.
@@ -101,6 +120,7 @@ class ReservationsByTable(BaseAPIView, generics.ListAPIView):
 #                         UpcomingReservations Views                              #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='get')
 class UpcomingReservations(BaseAPIView, generics.ListAPIView):
     """
     API endpoint to list all upcoming reservations.
@@ -122,6 +142,7 @@ class UpcomingReservations(BaseAPIView, generics.ListAPIView):
 #                         ApprovedReservations Views                              #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='get')
 class ApprovedReservations(BaseAPIView, generics.ListAPIView):
     """
     API endpoint to list all approved reservations.
@@ -137,6 +158,7 @@ class ApprovedReservations(BaseAPIView, generics.ListAPIView):
 #                         PendingReservations Views                               #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='get')
 class PendingReservations(BaseAPIView, generics.ListAPIView):
     """
     API endpoint to list all pending reservations.
@@ -152,6 +174,7 @@ class PendingReservations(BaseAPIView, generics.ListAPIView):
 #                         AvailableTables Views                                   #
 ##################################################################################
 
+@method_decorator(cache_page(CACHE_TTL), name='get')
 class AvailableTables(BaseAPIView, generics.ListAPIView):
     """
     API endpoint to list all available tables for a given date and time.
@@ -170,3 +193,29 @@ class AvailableTables(BaseAPIView, generics.ListAPIView):
         ).values_list('table_id', flat=True)
         return Table.objects.exclude(id__in=reserved_tables)
 
+
+##################################################################################
+#                        MenuItem Restore & History Views                         #
+##################################################################################
+
+class MenuItemRestoreView(RestoreMixin, APIView):
+    """
+    Restore a soft-deleted menu item (admin only).
+    """
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, pk):
+        instance = MenuItem.objects.get(pk=pk)
+        instance.is_deleted = False
+        instance.save()
+        return Response({"success": f"MenuItem '{instance.name}' restored"}, status=status.HTTP_200_OK)
+
+
+class MenuItemHistoryList(BaseAPIView, generics.ListAPIView):
+    """
+    List all historical changes for menu items (admin only).
+    """
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        return MenuItem.history.all()

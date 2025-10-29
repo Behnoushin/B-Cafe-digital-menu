@@ -1,5 +1,6 @@
 # -------------------   Django imports ------------------------
 from django.db import models
+from django.db.models import Q
 # -------------------   Apps imports ------------------------
 from .choices import TableTypeChoices, ReservationTypeChoices, DurationChoices
 from utility.models import BaseModel
@@ -15,6 +16,19 @@ class Table(models.Model):
     def __str__(self):
         return f"Table {self.number} - {self.get_capacity_display()}"
     
+    class Meta:
+        
+        indexes = [
+            models.Index(fields=['number']), 
+        ]
+        
+        constraints = [
+            models.CheckConstraint(
+                check=Q(capacity__in=[choice.value for choice in TableTypeChoices]),
+                name='valid_table_capacity'
+            )
+        ]
+        
 ##################################################################################
 #                             Reservation Model                                  #
 ##################################################################################
@@ -43,10 +57,33 @@ class Reservation(BaseModel):
     table = models.ForeignKey("Table", on_delete=models.CASCADE, verbose_name="Selected Table")
     is_approved = models.BooleanField(default=False, verbose_name="Approved by Admin")
 
+    def __str__(self):
+        return f"{self.full_name} - {self.date} {self.time}"
+
     class Meta:
         ordering = ["-created_at"]
         verbose_name = "Reservation"
         verbose_name_plural = "Reservations"
-
-    def __str__(self):
-        return f"{self.full_name} - {self.date} {self.time}"
+        indexes = [
+            models.Index(fields=['date', 'time']),             
+            models.Index(fields=['table', 'date', 'time']),   
+            models.Index(fields=['is_approved']),            
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=Q(number_of_guests__gt=0),
+                name='positive_number_of_guests'
+            ),
+            models.CheckConstraint(
+                check=Q(duration__in=[choice.value for choice in DurationChoices]),
+                name='valid_reservation_duration'
+            ),
+            models.CheckConstraint(
+                check=Q(table_type__in=[choice.value for choice in TableTypeChoices]),
+                name='valid_table_type'
+            ),
+            models.CheckConstraint(
+                check=Q(reservation_type__in=[choice.value for choice in ReservationTypeChoices]),
+                name='valid_reservation_type'
+            ),
+        ]

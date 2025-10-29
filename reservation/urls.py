@@ -8,6 +8,8 @@ from .views import (
     ApprovedReservations,
     PendingReservations,
     AvailableTables,
+    MenuItemRestoreView,
+    MenuItemHistoryList
 )
 
 urlpatterns = [
@@ -32,4 +34,10 @@ urlpatterns = [
 
     # AvailableTables URLs
     path("tables/available/", AvailableTables.as_view(), name="available-tables"),
+    
+    # Restore a soft-deleted menu item
+    path('menu-items/<int:pk>/restore/', MenuItemRestoreView.as_view(), name='menuitem-restore'),
+
+    # List history of all menu items
+    path('menu-items/history/', MenuItemHistoryList.as_view(), name='menuitem-history'),
 ]
