@@ -1,23 +1,54 @@
-# -------------------  DRF imports   ------------------------
-from rest_framework import generics
-# -------------------   Apps imports ------------------------
+# ------------------- Django imports ------------------------
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.core.cache import cache
+from django.conf import settings
+
+# ------------------- DRF imports ------------------------
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+# ------------------- App imports ------------------------
+from utility.views import BaseAPIView
+from utility.mixins import RestoreMixin
 from .models import IngredientRequest, IngredientItem
 from .serializers import IngredientRequestSerializer, IngredientItemSerializer
 from .permissions import IsChefOrAdmin, IsAdminOnly, IsChefAndNotApprovedOrAdmin
-from utility.views import BaseAPIView
+
+# ------------------- Constants ------------------------
+CACHE_TTL = getattr(settings, 'CACHE_TTL', 60 * 5)
+
+##################################################################################
+#                               Base View                                        #
+##################################################################################
+
+class IngredientBaseView(BaseAPIView):
+    """
+    Base view for IngredientRequest app.
+    Handles:
+    - Cache invalidation on update and delete
+    - Provides common permission classes
+    """
+    permission_classes = [IsChefOrAdmin]
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        cache_key = f'views.decorators.cache.cache_page.{self.request.get_full_path()}'
+        cache.delete(cache_key)
+        return instance
+
+    def perform_destroy(self, instance):
+        instance.delete()
+        cache_key = f'views.decorators.cache.cache_page.{self.request.get_full_path()}'
+        cache.delete(cache_key)
 
 ##################################################################################
 #                        IngredientRequest Views                                  #
 ##################################################################################
 
-class IngredientRequestListCreateView(BaseAPIView, generics.ListCreateAPIView):
-    """
-    View to:
-    - List ingredient requests:
-      * Chefs see only their own requests
-      * Admins see all requests
-    - Create new ingredient requests by chefs (and admins if needed)
-    """
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
+class IngredientRequestListCreateView(IngredientBaseView, generics.ListCreateAPIView):
     queryset = IngredientRequest.objects.all()
     serializer_class = IngredientRequestSerializer
     permission_classes = [IsChefOrAdmin]
@@ -31,43 +62,27 @@ class IngredientRequestListCreateView(BaseAPIView, generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(chef=self.request.user)
 
-
-class IngredientRequestDetailView(BaseAPIView, generics.RetrieveUpdateDestroyAPIView):
-    """
-    View to:
-    - Retrieve details of a specific ingredient request
-    - Allow chefs to update or delete their requests only if NOT approved by admin
-    - Allow admins to view, update, or delete any request at any time
-    - Prevent chefs from editing or deleting after admin approval
-    """
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
+class IngredientRequestDetailView(IngredientBaseView, generics.RetrieveUpdateDestroyAPIView):
     queryset = IngredientRequest.objects.all()
     serializer_class = IngredientRequestSerializer
     permission_classes = [IsChefAndNotApprovedOrAdmin]
 
 ##################################################################################
-#                        IngredientItemUpdate Views                              #
+#                        IngredientItem Update (Admin)                             #
 ##################################################################################
 
-class IngredientItemUpdateView(BaseAPIView, generics.UpdateAPIView):
-    """
-    View to:
-    - Update status of each ingredient item (approved, rejected, purchased)
-      Only admins have permission
-    - Chefs do NOT have access to this endpoint
-    """
+class IngredientItemUpdateView(IngredientBaseView, generics.UpdateAPIView):
     queryset = IngredientItem.objects.all()
     serializer_class = IngredientItemSerializer
     permission_classes = [IsAdminOnly]
 
 ##################################################################################
-#                        MyIngredientRequestsList View                            #
+#                        My Requests / Chef Views                                 #
 ##################################################################################
 
-class MyIngredientRequestsList(BaseAPIView, generics.ListAPIView):
-    """
-    View to list all ingredient requests of the logged-in chef.
-    Chefs can only see their own requests.
-    """
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
+class MyIngredientRequestsList(IngredientBaseView, generics.ListAPIView):
     queryset = IngredientRequest.objects.all()
     serializer_class = IngredientRequestSerializer
     permission_classes = [IsChefOrAdmin]
@@ -76,18 +91,13 @@ class MyIngredientRequestsList(BaseAPIView, generics.ListAPIView):
         user = self.request.user
         if user.role == 'chef':
             return self.queryset.filter(chef=user)
-        return self.queryset.none()  # only chef's own requests
-
+        return self.queryset.none()
 
 ##################################################################################
-#                        CreateIngredientRequest View                             #
+#                        Create / Update / Delete Views                           #
 ##################################################################################
 
-class CreateIngredientRequest(BaseAPIView, generics.CreateAPIView):
-    """
-    View to create a new ingredient request with multiple items.
-    Only chefs (and optionally admins) can create requests.
-    """
+class CreateIngredientRequest(IngredientBaseView, generics.CreateAPIView):
     queryset = IngredientRequest.objects.all()
     serializer_class = IngredientRequestSerializer
     permission_classes = [IsChefOrAdmin]
@@ -95,107 +105,49 @@ class CreateIngredientRequest(BaseAPIView, generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(chef=self.request.user)
 
-
-##################################################################################
-#                        UpdateIngredientRequest View                             #
-##################################################################################
-
-class UpdateIngredientRequest(BaseAPIView, generics.UpdateAPIView):
-    """
-    View to update note and items of an ingredient request.
-    Only allowed if the request is NOT reviewed by admin.
-    """
+class UpdateIngredientRequest(IngredientBaseView, generics.UpdateAPIView):
     queryset = IngredientRequest.objects.all()
     serializer_class = IngredientRequestSerializer
     permission_classes = [IsChefAndNotApprovedOrAdmin]
 
-
-##################################################################################
-#                        DeleteIngredientRequest View                             #
-##################################################################################
-
-class DeleteIngredientRequest(BaseAPIView, generics.DestroyAPIView):
-    """
-    View to delete an ingredient request.
-    Only allowed if the request is NOT reviewed by admin.
-    """
+class DeleteIngredientRequest(IngredientBaseView, generics.DestroyAPIView):
     queryset = IngredientRequest.objects.all()
     serializer_class = IngredientRequestSerializer
     permission_classes = [IsChefAndNotApprovedOrAdmin]
 
-
 ##################################################################################
-#                        AllIngredientRequestsList View                            #
+#                        Admin Views                                              #
 ##################################################################################
 
-class AllIngredientRequestsList(BaseAPIView, generics.ListAPIView):
-    """
-    View to list all ingredient requests for admin.
-    Admins can see requests from all chefs.
-    """
+@method_decorator(cache_page(CACHE_TTL), name='dispatch')
+class AllIngredientRequestsList(IngredientBaseView, generics.ListAPIView):
     queryset = IngredientRequest.objects.all()
     serializer_class = IngredientRequestSerializer
     permission_classes = [IsAdminOnly]
 
-
-##################################################################################
-#                        ApproveOrRejectIngredientItem View                       #
-##################################################################################
-
-class ApproveOrRejectIngredientItem(BaseAPIView, generics.UpdateAPIView):
-    """
-    View to approve, reject, or mark items as purchased.
-    Only admins have access to this endpoint.
-    """
+class ApproveOrRejectIngredientItem(IngredientBaseView, generics.UpdateAPIView):
     queryset = IngredientItem.objects.all()
     serializer_class = IngredientItemSerializer
     permission_classes = [IsAdminOnly]
 
-
-##################################################################################
-#                        IngredientRequestByStatus View                           #
-##################################################################################
-
-class IngredientRequestByStatus(BaseAPIView, generics.ListAPIView):
-    """
-    View to filter ingredient requests based on is_reviewed status.
-    Only admins can use this view.
-    """
+class IngredientRequestByStatus(IngredientBaseView, generics.ListAPIView):
     serializer_class = IngredientRequestSerializer
     permission_classes = [IsAdminOnly]
 
     def get_queryset(self):
-        status = self.request.query_params.get('is_reviewed')
-        if status is not None:
-            return IngredientRequest.objects.filter(is_reviewed=status.lower() == 'true')
+        status_param = self.request.query_params.get('is_reviewed')
+        if status_param is not None:
+            return IngredientRequest.objects.filter(is_reviewed=status_param.lower() == 'true')
         return IngredientRequest.objects.all()
 
-
-##################################################################################
-#                        RecentIngredientRequests View                             #
-##################################################################################
-
-class RecentIngredientRequests(BaseAPIView, generics.ListAPIView):
-    """
-    View to list the most recent ingredient requests.
-    Useful for admin dashboard.
-    """
+class RecentIngredientRequests(IngredientBaseView, generics.ListAPIView):
     serializer_class = IngredientRequestSerializer
     permission_classes = [IsAdminOnly]
 
     def get_queryset(self):
         return IngredientRequest.objects.all().order_by('-created_at')[:10]
 
-
-##################################################################################
-#                        IngredientItemByApprovalStatus View                      #
-##################################################################################
-
-class IngredientItemByApprovalStatus(BaseAPIView, generics.ListAPIView):
-    """
-    View to filter ingredient items by approval, rejection, or purchased status.
-    Only accessible by admins.
-    """
+class IngredientItemByApprovalStatus(IngredientBaseView, generics.ListAPIView):
     serializer_class = IngredientItemSerializer
     permission_classes = [IsAdminOnly]
 
@@ -212,3 +164,25 @@ class IngredientItemByApprovalStatus(BaseAPIView, generics.ListAPIView):
         if purchased is not None:
             queryset = queryset.filter(is_purchased=purchased.lower() == 'true')
         return queryset
+
+##################################################################################
+#                        Restore & History Views                                 #
+##################################################################################
+
+class IngredientRequestRestoreView(RestoreMixin, APIView):
+    permission_classes = [IsAdminOnly]
+
+    def post(self, request, pk):
+        instance = IngredientRequest.objects.get(pk=pk)
+        instance.is_deleted = False
+        instance.save()
+        cache_key = f'views.decorators.cache.cache_page.{request.get_full_path()}'
+        cache.delete(cache_key)
+        return Response({"success": f"IngredientRequest '{instance.id}' restored"}, status=status.HTTP_200_OK)
+
+class IngredientRequestHistoryList(IngredientBaseView, generics.ListAPIView):
+    serializer_class = IngredientRequestSerializer
+    permission_classes = [IsAdminOnly]
+
+    def get_queryset(self):
+        return IngredientRequest.history.all()

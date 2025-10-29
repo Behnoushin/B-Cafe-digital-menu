@@ -12,6 +12,8 @@ from .views import (
     IngredientRequestByStatus,
     RecentIngredientRequests,
     IngredientItemByApprovalStatus,
+    IngredientRequestRestoreView,
+    IngredientRequestHistoryList
 )
 
 urlpatterns = [
@@ -30,10 +32,14 @@ urlpatterns = [
 
     # Admin URLs
     path('requests/all/', AllIngredientRequestsList.as_view(), name='all-ingredient-requests'),
+    path('items/<int:pk>/update/', ApproveOrRejectIngredientItem.as_view(), name='approve-reject-ingredient-item'),
     path('requests/status/', IngredientRequestByStatus.as_view(), name='ingredient-requests-by-status'),
     path('requests/recent/', RecentIngredientRequests.as_view(), name='recent-ingredient-requests'),
 
     # Ingredient Item URLs (Admin only)
-    path('items/<int:pk>/update/', ApproveOrRejectIngredientItem.as_view(), name='update-ingredient-item'),
     path('items/filter/', IngredientItemByApprovalStatus.as_view(), name='ingredient-items-by-status'),
+
+    # Restore & History URLs
+    path('requests/<int:pk>/restore/', IngredientRequestRestoreView.as_view(), name='ingredient-request-restore'),
+    path('requests/history/', IngredientRequestHistoryList.as_view(), name='ingredient-request-history'),
 ]

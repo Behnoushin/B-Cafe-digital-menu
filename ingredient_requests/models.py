@@ -15,7 +15,18 @@ class IngredientRequest(BaseModel):
 
     def __str__(self):
         return f"Request by {self.chef}"
-
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['chef']),
+            models.Index(fields=['is_reviewed', 'created_at']),
+        ]
+        
+        constraints = [
+            # Only one request with one note per chef
+            models.UniqueConstraint(fields=['chef', 'note'], name='unique_request_per_chef')
+        ]
+        
 ##################################################################################
 #                         IngredientItem Model                                   #
 ##################################################################################
@@ -30,3 +41,21 @@ class IngredientItem(BaseModel):
 
     def __str__(self):
         return f"{self.name} ({self.quantity})"
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['request']),
+            models.Index(fields=['name']),
+            models.Index(fields=['request', 'name']), 
+        ]
+
+        constraints = [
+            # Prevent items with the same name from appearing again in the same request
+            models.UniqueConstraint(fields=['request', 'name'], name='unique_item_per_request'),
+            
+            # Making sure it doesn't get approved and rejected at the same time
+            models.CheckConstraint(
+                check=~(models.Q(is_approved=True) & models.Q(is_rejected=True)),
+                name='approved_not_rejected'
+            ),
+        ]
