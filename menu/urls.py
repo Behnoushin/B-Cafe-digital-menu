@@ -11,7 +11,8 @@ from .views import (
     MenuItemsByPrepTime,
     ActiveMenuItems, 
     OutOfStockMenuItems,
-    MenuItemsByCategory
+    MenuItemsByCategory, 
+    MenuItemRestoreView, MenuItemHistoryList
     )
 
 urlpatterns = [
@@ -46,4 +47,9 @@ urlpatterns = [
     # MenuItemsByCategory URL
     path("categories/<int:category_id>/menu-items/", MenuItemsByCategory.as_view(), name="menuitems-by-category"),
 
+    # Restore a soft-deleted menu item
+    path("menu-items/<int:pk>/restore/", MenuItemRestoreView.as_view(), name="menuitem-restore"),
+
+    # List historical changes of menu items
+    path("menu-items/history/", MenuItemHistoryList.as_view(), name="menuitem-history"),
 ]

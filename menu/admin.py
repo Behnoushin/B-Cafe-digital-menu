@@ -28,7 +28,7 @@ class CategoryAdmin(BaseAdmin):
 #              MenuItem Admin               #
 #############################################
 
-class MenuItemAdmin(admin.ModelAdmin):
+class MenuItemAdmin(BaseAdmin):
     list_display = [
         "id",
         "name",

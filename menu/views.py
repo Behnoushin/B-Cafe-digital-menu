@@ -19,6 +19,7 @@ from .permissions import IsAdminOrReadOnly
 from .filters import MenuItemFilter, MenuItemPrepTimeFilter
 from .throttles import MenuItemListThrottle
 from utility.views import BaseAPIView
+from utility.mixins import RestoreMixin
 
 # ----------------- Cache TTL -----------------
 CACHE_TTL = 60 * 5  # 5 minutes
@@ -245,7 +246,7 @@ class MenuItemsByCategory(BaseAPIView, generics.ListAPIView):
 #                         Restore & History Views                                 #
 ##################################################################################
 
-class MenuItemRestoreView(APIView):
+class MenuItemRestoreView(RestoreMixin, APIView):
     """
     Restore a soft-deleted menu item (admin only).
     """
