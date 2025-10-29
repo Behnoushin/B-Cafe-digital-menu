@@ -55,7 +55,7 @@ class MenuItem(BaseModel):
 
     @property
     def final_price(self):
-        if self.discount_percent:
+        if self.is_discount_active:
             return self.price - (self.price * self.discount_percent / 100)
         return self.price
     
@@ -88,6 +88,7 @@ class MenuItem(BaseModel):
         self.status = (
             ItemStatus.OUT_OF_STOCK if self.stock == 0 else ItemStatus.AVAILABLE
         )
+        self.full_clean()
         super().save(*args, **kwargs)
         
         
@@ -103,5 +104,16 @@ class MenuItem(BaseModel):
             models.UniqueConstraint(fields=['name', 'category'], name='unique_item_per_category')
         ]
         
+        """
+        Indexes for MenuItem:
 
+        - name: speeds up queries filtering by item name.
+        - category + status: speeds up queries filtering by category and status.
+
+        Note: improves read performance; slight overhead on writes.
+        """
+        indexes = [
+            models.Index(fields=['name']),  
+            models.Index(fields=['category', 'status']), 
+        ] 
         

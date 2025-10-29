@@ -1,5 +1,7 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
+#----------------- IsChefOrAdmin ----------
+
 class IsChefOrAdmin(BasePermission):
     """
     Only chefs or admins are allowed access (for creating and viewing).
@@ -7,6 +9,7 @@ class IsChefOrAdmin(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role in ['chef', 'admin']
 
+#-------------- IsAdminOnly ---------
 
 class IsAdminOnly(BasePermission):
     """
@@ -15,6 +18,7 @@ class IsAdminOnly(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role == 'admin'
 
+#------------ IsChefAndNotApprovedOrAdmin ------------
 
 class IsChefAndNotApprovedOrAdmin(BasePermission):
     """

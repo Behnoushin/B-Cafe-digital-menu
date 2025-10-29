@@ -4,7 +4,15 @@ from django.contrib import admin
 from .models import IngredientRequest, IngredientItem
 
 #############################################
-#           IngredientItemInline             #
+#               Base Admin                  #
+#############################################
+
+class BaseAdmin(admin.ModelAdmin):
+    readonly_fields = ['id', 'created_at', 'updated_at']
+    list_per_page = 20
+
+#############################################
+#           IngredientItemInline            #
 #############################################
 
 class IngredientItemInline(admin.TabularInline):
@@ -13,27 +21,24 @@ class IngredientItemInline(admin.TabularInline):
     readonly_fields = ['is_approved', 'is_rejected', 'is_purchased']
 
 #############################################
-#         IngredientRequest Admin            #
+#         IngredientRequest Admin           #
 #############################################
 
-class IngredientRequestAdmin(admin.ModelAdmin):
+class IngredientRequestAdmin(BaseAdmin):
     list_display = ['id', 'chef', 'note', 'is_reviewed', 'created_at', 'updated_at']
     search_fields = ['chef__username', 'note']
     list_filter = ['is_reviewed', 'created_at']
-    readonly_fields = ['id', 'created_at', 'updated_at']
     inlines = [IngredientItemInline]
-    list_per_page = 20
 
 #############################################
 #          IngredientItem Admin             #
 #############################################
 
-class IngredientItemAdmin(admin.ModelAdmin):
+class IngredientItemAdmin(BaseAdmin):
     list_display = ['id', 'request', 'name', 'quantity', 'is_approved', 'is_rejected', 'is_purchased']
-    list_filter = ['is_approved', 'is_rejected', 'is_purchased']
     search_fields = ['name', 'request__chef__username']
-    readonly_fields = ['id']
-    list_per_page = 25
+    list_filter = ['is_approved', 'is_rejected', 'is_purchased']
+
 
 admin.site.register(IngredientRequest, IngredientRequestAdmin)
 admin.site.register(IngredientItem, IngredientItemAdmin)
